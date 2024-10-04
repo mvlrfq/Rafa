@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hut Marhamah yg ke 18</title>
+    <style>
+    * {
+      margin: 0px;
+      padding: 0px;
+    }
+    #cus {
+      overflow-x: hidden;
+      padding-bottom: 30px;
+    }
+        /* Style untuk h1 dengan shadow dan animasi */
+        h1 {
+            text-align: center;
+            font-size: 30px;
+            font-family: 'Times New Roman', Times, serif;
+            margin: 10px 5% 10px 5%;
+            color: black;
+            background-color: #b5f0bd;
+            border: 5px solid gold;
+            border-radius: 20px;
+            padding: 20px;
+            animation: borderColorChange 5s infinite, shadowPulse 3s infinite ease-in-out, teksh1 5s infinite, getarh1 3s infinite;
+        }
+
+        /* Animasi untuk border h1 */
+        @keyframes borderColorChange {
+            0% {
+                border-color: gold;
+            }
+            25% {
+                border-color: red;
+            }
+            50% {
+                border-color: #ed2693;
+            }
+            75% {
+                border-color: black;
+            }
+            100% {
+                border-color: gold;
+            }
+        }
+        @keyframes teksh1 {
+          0% {
+                color: #2e4343;
+            }
+            25% {
+                color: red;
+            }
+            50% {
+                color: blue;
+            }
+            75% {
+                color: black;
+            }
+            100% {
+                color: #2e4343;
+            }
+        }
+        @keyframes getarh1 {
+          0% {
+            transform: rotate(0deg);
+          }
+          47% {
+            transform: rotate(0deg);
+          }
+          48% {
+            transform: rotate(10deg);
+          }
+          49% {
+            transform: rotate(-10deg);
+          }
+          50% {
+            transform: rotate(10deg);
+          }
+          51% {
+            transform: rotate(-10deg);
+          }
+          52% {
+            transform: rotate(10deg);
+          }
+          53% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(0deg);
+          }
+        }
+
+        /* Animasi shadow dinamis untuk h1 */
+        @keyframes shadowPulse {
+            0% {
+                box-shadow: 0 0 10px rgba(255, 255, 0, 0.5), 0 0 20px rgba(255, 0, 0, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(0, 0, 255, 0.7), 0 0 40px rgba(255, 20, 147, 0.7);
+            }
+            100% {
+                box-shadow: 0 0 10px rgba(0, 255, 0, 0.5), 0 0 20px rgba(255, 255, 0, 0.5);
+            }
+        }
+
+        /* Style untuk img dengan shadow dan animasi */
+        img {
+            display: block;
+            margin: auto;
+            margin-top: 40px;
+            width: 400px;
+            height: 450px;
+            border-radius: 15px;
+            border: 3px solid salmon;
+            animation: shadowFloat 4s infinite ease-in-out;
+        }
+
+        /* Animasi shadow dinamis untuk img */
+        @keyframes shadowFloat {
+            0% {
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+                transform: translateY(0);
+            }
+            50% {
+                box-shadow: 0 15px 30px #ed2693;
+                transform: translateY(-20px);
+            }
+            100% {
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes hati {
+          0% {
+            transform: scale(0);
+          }
+          40% {
+            transform: scale(1);
+          }
+          60% {
+            transform: scale(1);
+          }
+          100% {
+            transform: scale(0);
+          }
+        }
+   
+        .cuspesan {
+         position: relative;
+         border: 5px solid #f936a1;
+         background-color: lightgreen;
+         border-radius: 25px;
+         margin: 20px 12% 20px 12%;
+         animation: hati 2.5s infinite;
+        }
+      p {
+            text-align: center;
+            font-size: 20px;
+            
+            position: relative;
+            font-family: Times New Roman;
+            
+            white-space: pre; /* Pertahankan spasi */
+      }
+        .pisi {
+            
+            animation: textDrop 2s ease-in-out, borderColorChange 5s infinite ease-in-out;
+        }
+        .tomb {
+          margin: 0px;
+          font-size: 100px;
+          position: absolute; /* Elemen ini harus diatur sebagai absolute */
+        top: 50%;
+        left: 50%;
+    transform: translate(-50%, -50%); /* Menggeser elemen ke kiri dan atas setengah dari ukurannya */
+        }
+        span {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(-100px);
+            animation: dropLetter 0.5s forwards ease-in-out;
+        }
+
+        /* Keyframes untuk animasi drop */
+        @keyframes dropLetter {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Animasi drop untuk p */
+        @keyframes textDrop {
+            0% {
+                transform: translateY(-900px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+  <div id="cus">
+ 
+    <!-- Elemen h1 dengan animasi border warna-warni dan shadow dinamis -->
+    <h1>Happy birthday<br>"Marhamah Asy Syifa Rahmaini"<br>yang ke 18 tahun<br>Barakallah fi umrik🤲</h1>
+
+    <!-- https://via.placeholder.com/200x350Elemen img dengan border-radius dan animasi shadow mengambang -->
+    <img src="https://small.fileditchstuff.me/s16/nDcnbjHWrlHNsnyiiubJ.jpg" alt="Marhamah">
+
+    <!-- Elemen p dengan animasi drop dan shadow dinamis -->
+     <div class="cuspesan">
+    <p class="tomb">💌</p>
+     </div>
+     
+     
+     
+    
+  </div>
+</body>
+ <script>
+ </script>
+</html>
