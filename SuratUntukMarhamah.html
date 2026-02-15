@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuratUntukMarhamah</title>
+    <style>
+    * {
+      margin: 0px;
+      padding: 0px;
+    }
+    #cus {
+      overflow-x: hidden;
+      padding-bottom: 30px;
+    }
+        h1 {
+            text-align: center;
+            font-size: 30px;
+            font-family: 'Times New Roman', Times, serif;
+            margin: 10px 5% 10px 5%;
+            color: black;
+            background-color: #b5f0bd;
+            border: 5px solid gold;
+            border-radius: 20px;
+            padding: 20px;
+            animation: borderColorChange 5s infinite, shadowPulse 3s infinite ease-in-out, teksh1 5s infinite, getarh1 3s infinite;
+        }
+        @keyframes borderColorChange {
+            0% {
+                border-color: gold;
+            }
+            25% {
+                border-color: red;
+            }
+            50% {
+                border-color: #ed2693;
+            }
+            75% {
+                border-color: black;
+            }
+            100% {
+                border-color: gold;
+            }
+        }
+        @keyframes teksh1 {
+          0% {
+                color: #2e4343;
+            }
+            25% {
+                color: red;
+            }
+            50% {
+                color: blue;
+            }
+            75% {
+                color: black;
+            }
+            100% {
+                color: #2e4343;
+            }
+        }
+        @keyframes getarh1 {
+          0% {
+            transform: rotate(0deg);
+          }
+          47% {
+            transform: rotate(0deg);
+          }
+          48% {
+            transform: rotate(10deg);
+          }
+          49% {
+            transform: rotate(-10deg);
+          }
+          50% {
+            transform: rotate(10deg);
+          }
+          51% {
+            transform: rotate(-10deg);
+          }
+          52% {
+            transform: rotate(10deg);
+          }
+          53% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(0deg);
+          }
+        }
+        @keyframes shadowPulse {
+            0% {
+                box-shadow: 0 0 10px rgba(255, 255, 0, 0.5), 0 0 20px rgba(255, 0, 0, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(0, 0, 255, 0.7), 0 0 40px rgba(255, 20, 147, 0.7);
+            }
+            100% {
+                box-shadow: 0 0 10px rgba(0, 255, 0, 0.5), 0 0 20px rgba(255, 255, 0, 0.5);
+            }
+        }
+        .isi {
+            display: block;
+            margin: auto;
+            margin-top: 40px;
+            width: 400px;
+            height: 450px;
+            border-radius: 15px;
+            border: 3px solid salmon;
+            animation: shadowFloat 4s infinite ease-in-out;
+            padding-top: 50px;
+            background-color: #96ff9f;
+        }
+        .btnsuratkiri, .btnsuratkanan, .btnsurat1, .btnsurat2, .btnsurat3 {
+          justify-content: space-between;
+          width: 90px;
+          margin: 15px 15px 5px 15px;
+          padding: 7px;
+          border-radius: 20px;
+          font-size: 20px;
+          font-family: 'Times New Roman';
+        }
+        .btnsuratkiri {
+          background-color: rgb(154, 253, 154);
+        }
+        .btnsuratkanan, .btnsurat1, .btnsurat2, .btnsurat2, .btnsurat3 {
+          background-color: red;
+          transition-duration: 500ms;
+        }
+        .btnsurat1 {
+          transform: translateY(250px) translateX(120px);
+        }
+        .btnsurat2 {
+          transform: translateY(250px) translateX(-120px);
+        }
+       .btnsurat3 {
+         transform: translateY(100px);
+        }
+        .btnsurat4 {
+          display: none;
+        }
+        .hyilang {
+          display: none;
+        }
+        .hyilang2 {}
+        @keyframes shadowFloat {
+            0% {
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+                transform: translateY(0);
+            }
+            50% {
+                box-shadow: 0 15px 30px #ed2693;
+                transform: translateY(-20px);
+            }
+            100% {
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+                transform: translateY(0);
+            }
+        }
+        @keyframes hati {
+          0% {
+            transform: scale(0);
+          }
+          40% {
+            transform: scale(1);
+          }
+          60% {
+            transform: scale(1);
+          }
+          100% {
+            transform: scale(0);
+          }
+        }
+        .cuspesan {
+         position: relative;
+         border: 5px solid #f936a1;
+         background-color: lightgreen;
+         border-radius: 25px;
+         margin: 20px 12% 20px 12%;
+         animation: hati 2.5s infinite;
+        }
+      p {
+            text-align: center;
+            font-size: 20px;
+            position: relative;
+            font-family: Times New Roman;
+            white-space: pre;
+      }
+        .pisi {
+            animation: textDrop 2s ease-in-out, borderColorChange 5s infinite ease-in-out;
+        }
+        .tomb {
+          margin: 0px;
+          font-size: 100px;
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+        }
+        span {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(-100px);
+            animation: dropLetter 0.5s forwards ease-in-out;
+        }
+        @keyframes dropLetter {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes textDrop {
+            0% {
+                transform: translateY(-900px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+      .divplaymusik {
+        position: fixed;
+        right: 10px;
+        bottom: 10px;
+        z-index: 10;
+      }
+      .playmusik {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+      }
+      .tmsk {
+        font-size: 20px;
+        padding: 5px 15px 5px 15px;
+        border-radius: 10px 10px 30px 30px;
+        border: 3px solid black;
+        background-color: aqua;
+      }
+    </style>
+</head>
+<body style="background-color: rgb(214, 198, 177);">
+    <audio id="backsound" src="https://mvlrfq.github.io/Wak/tumhiho.mp3" loop></audio>
+  <div id="cus">
+    <div class="divplaymusik"><img id="gmbrmsk" class="playmusik" src="https://mvlrfq.github.io/Wak/logoplay.png" alt="musik">
+    <p class="tmsk">Musik</p>
+    </div>
+    <h1>Selamat Hari Raya<br>"Kak Marhamah Asy Syifa Rahmaini"<br>yang Sangat-sangat ku sayangi<br>HEHE</h1>
+    <p class="isi">Aku ada surat nih untuk kakak,<br>kakak mau bacanya ngga?
+    <button class="btnsuratkiri" onclick="window.open('https://mvlrfq.github.io/Rafa/SuratUntukMarhamah.pdf','_blank')">mau</button>
+    <button id="btngmau" class="btnsuratkanan" onclick="ganti()">ga mau</button>
+    <label id="btnilang" class="hyilang">hayo tombolnya ilang,<br>    berarti kakak harus mau</label> 
+    </p></div>
+   <div class="cuspesan">
+    <p class="tomb">💌</p>
+   </div>
+  </div>
+</body>
+ <script>
+  const gmbrmsk = document.getElementById('gmbrmsk');
+  const audio = document.getElementById('backsound');
+  gmbrmsk.addEventListener('click', function() {
+    if (audio.paused) {
+    audio.play();
+    gmbrmsk.setAttribute("src", "https://mvlrfq.github.io/Wak/logopause.png");
+  } else {
+    audio.pause();
+    gmbrmsk.setAttribute("src", "https://mvlrfq.github.io/Wak/logoplay.png");
+  }});
+  const btngmau = document.getElementById('btngmau')
+   function ganti() {
+    btngmau.className = "btnsurat1"
+    btngmau.setAttribute('onclick', 'ganti2()')
+  }
+   function ganti2() {
+    btngmau.className = "btnsurat2"
+    btngmau.setAttribute('onclick', 'ganti3()')
+  }
+    function ganti3() {
+    btngmau.className = "btnsurat3"
+    btngmau.setAttribute('onclick', 'ganti4()')
+  }
+   function ganti4() {
+    const btnilang = document.getElementById('btnilang')
+    btngmau.className = "btnsurat4"
+    btnilang.className = "btnilang2"
+  }
+
+ </script>
+</html>
