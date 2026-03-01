@@ -257,7 +257,7 @@
       justify-content: center;
       cursor: move;
       position: fixed;
-      top: 5px;
+      top: 35px;
       left: 5px;
       background-color: pink;
       border: 2px solid rgba(0, 0, 0, 0.2);
@@ -318,4 +318,5 @@
       }
       .h1pw {
         color: lightcyan;
+
       }
