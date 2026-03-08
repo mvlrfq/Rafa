@@ -1,0 +1,156 @@
+    * {
+    margin: 0px;
+    padding: 0px;
+  }
+    .bodyutama {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      background-color: lightgray;
+      overflow: hidden;
+      height: 100%;
+    }
+    .header {
+      background-color: darkgray;
+      height: 70px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      font-family: "Honk", system-ui;
+      color: black;
+      font-size: 2rem;
+    }
+    .isipesan {
+      margin: 20px;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: justify;
+      color: darkgrey;
+    }   
+    .bungkuspesan {
+      position: absolute;
+      top: 100px;
+      height: 83%;
+      display: none;
+      overflow: auto;
+    }
+    .kursor {
+  font-weight: bold;
+  color: black;
+  animation: kedip 0.7s infinite;
+}
+@keyframes kedip {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 1; }
+}
+#teks {
+  color: black;
+  font-family: "Bitcount Prop Double Ink", system-ui;
+  font-size: 15px;
+}
+:root {
+            --warna-amplop: #f0c27b;
+            --warna-amplop-dalam: #cf9e59;
+            --warna-kertas: #ffffff;
+        }
+.wrapper {
+            z-index: 10;
+            position: absolute;
+            cursor: pointer;
+            top: 100px;
+        }
+        .envelope {
+            position: relative;
+            width: 250px;
+            height: 150px;
+            background-color: var(--warna-amplop);
+            border-bottom-left-radius: 5px;
+            border-bottom-right-radius: 5px;
+        }
+        .flap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-left: 125px solid transparent;
+            border-right: 125px solid transparent;
+            border-top: 80px solid var(--warna-amplop);
+            transform-origin: top;
+            transition: transform 0.4s ease-in-out;
+            z-index: 3;
+        }
+        .envelope::before {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            border-left: 125px solid transparent;
+            border-right: 125px solid var(--warna-amplop-dalam);
+            border-top: 75px solid transparent;
+            border-bottom: 75px solid var(--warna-amplop-dalam);
+            z-index: 2;
+        }
+        .envelope::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            border-left: 125px solid var(--warna-amplop-dalam);
+            border-right: 125px solid transparent;
+            border-top: 75px solid transparent;
+            border-bottom: 75px solid var(--warna-amplop-dalam);
+            z-index: 2;
+        }
+        .letter {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 80%;
+            background: var(--warna-kertas);
+            text-align: center;
+            padding: 15px;
+            box-sizing: border-box;
+            transition: transform 0.4s ease-in-out;
+            z-index: 1;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .wrapper:hover .flap {
+            transform: rotateX(180deg);
+            z-index: 0;
+        }
+        .wrapper:hover .letter {
+            transform: translate(-50%, -100px); 
+            z-index: 2;
+        }
+        .letter h1 {
+            font-size: 16px;
+            color: #d81b60;
+        }
+        .letter p {
+            font-size: 12px;
+            color: #333;
+        }
+        .info {
+          position: absolute;
+          top: 270px;
+          border-radius: 7px;
+          background-color: darkgray;
+          padding: 10px;
+        }
+        .typing-wrapper {
+          background-color: lightgray;
+          z-index: 5;
+          width: 100%;
+          display: flex;
+          justify-content: center;
+        }
+       .typing-wrapper h1 {
+         padding: 5px;
+         color: rgba(0, 0, 0, 0.86);
+         font-size: 25px;
+       }
