@@ -115,7 +115,7 @@ color: lightgray;
 <script src="https://code.jquery.com/jquery-4.0.0.js" integrity="sha256-9fsHeVnKBvqh3FB2HYu7g2xseAZ5MlN6Kz/qnkASV8U=" crossorigin="anonymous">
 </script>
 <script>
-  function teksisi(durasi, idteks, teksAsli, idkursor, kursor,) {
+  function teksisi(durasi, idteks, teksAsli, lanjut, idkursor, kursor,) {
   $(idkursor).html(kursor)
   let i = 0;
   function ketik() {
@@ -128,6 +128,8 @@ color: lightgray;
         i++;
       }
       setTimeout(ketik, durasi);
+    } else {
+      lanjut()
     }
   }
    ketik();
@@ -137,15 +139,18 @@ color: lightgray;
  90,
  '#teks',
  'Marhamah, ngkau bagai bintang - bintang yang selalu bersinar dan menghiasi hidupku, tanpamu hidupku bagai malam yang gelap gulita.<br>hehe ( ^ ‿ ^ )',
+ jalan2,
  '#kur1',
  '|'
  )
  }, 300)
- setTimeout(()=> {
- teksisi(10, '#star', '................................<span>*</span>................................<br>............................<span>*</span>......<span>*</span>............................<br>.........................<span>*</span>............<span>*</span>.........................<br>.......<span>*</span>...<span>*</span>...<span>*</span>...<span>*</span>..................<span>*</span>...<span>*</span>...<span>*</span>...<span>*</span>.......<br>...........<span>*</span>........................................<span>*</span>...........<br>...............<span>*</span>................................<span>*</span>...............<br>.................<span>*</span>.............<span>*</span>............<span>*</span>..................<br>..............<span>*</span>...........<span>*</span>........<span>*</span>..........<span>*</span>...............<br>...........<span>*</span>......<span>*</span>........................<span>*</span>......<span>*</span>...........<br>........<span>*</span>..............................................<span>*</span>........<br>...........................<span class="bbin">My Star</span>.........................<br>........................<span class="bbin">Marhamah</span>.......................')
- }, 14200)
- setTimeout(()=> {
+ function jalan2() {
+ teksisi(10, '#star', '................................<span>*</span>................................<br>............................<span>*</span>......<span>*</span>............................<br>.........................<span>*</span>............<span>*</span>.........................<br>.......<span>*</span>...<span>*</span>...<span>*</span>...<span>*</span>..................<span>*</span>...<span>*</span>...<span>*</span>...<span>*</span>.......<br>...........<span>*</span>........................................<span>*</span>...........<br>...............<span>*</span>................................<span>*</span>...............<br>.................<span>*</span>.............<span>*</span>............<span>*</span>..................<br>..............<span>*</span>...........<span>*</span>........<span>*</span>..........<span>*</span>...............<br>...........<span>*</span>......<span>*</span>........................<span>*</span>......<span>*</span>...........<br>........<span>*</span>..............................................<span>*</span>........<br>...........................<span class="bbin">My Star</span>.........................<br>........................<span class="bbin">Marhamah</span>.......................',
+   jalan3
+ )
+ }
+ function jalan3() {
   teksisi(80, '#terbit', 'Muhammad Rafiqi, 9 Maret 2026.')
-}, 28300)
+}
 </script>
 </html>
