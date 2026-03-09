@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sang Bintang</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Dots&display=swap&family=Changa+One:ital@0;1" rel="stylesheet">
+</head>
+<style>
+  * {
+    margin: 0px;
+    padding: 0px;
+  }
+  html, body {
+  height: 100%;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.container {
+  background-color: lightgray;
+  height: 100%;
+  width: 100%;
+}
+.bjudul {
+  background-color: darkseagreen;
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+}
+.judul {
+  color: rgba(0, 0, 0, 0.58);
+  font-family: "Changa One", sans-serif;
+  font-style: italic;
+  font-weight: 100;
+}
+.bteks {
+  margin-top: 30px;
+  height: 80%;
+  margin-right: 18px;
+  margin-left: 18px;
+  text-align: justify;
+}
+#teks{
+  font-family: "Zen Dots", sans-serif;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.58);
+}
+ .kursor {
+  font-weight: bold;
+  color: rgba(0, 0, 0, 0.58);
+  animation: kedip 0.7s infinite;
+}
+@keyframes kedip {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.bstar {
+  background-color : rgba(255, 255, 240, 1);
+  border-radius: 10px;
+  border: 1px solid white;
+  width: 250px;
+  text-align: justify;
+}
+.bungstr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+}
+#star {
+font-size: 15px;
+color: lightgray;
+}
+#star span {
+  font-size: 15px;
+  color: rgba(0, 0, 0, 0.58);
+}
+.bbin {
+  font-family: sans-serif;
+  font-size: 5px;
+}
+.terbit {
+  position: fixed;
+  bottom: 10px;
+}
+.terbit span {
+  font-size: 14px;
+  font-family: "Zen Dots", sans-serif;
+  color: rgba(0, 0, 0, 0.58);
+}
+</style>
+<body>
+  <div class="container">
+    <div class="bjudul">
+    <h1 class="judul">Sang Bintang</h1>
+    </div>
+   <div class="bteks">
+     <span id="teks"></span><span class="kursor" id="kur1"></span>
+     <div class="bungstr">
+     <div class="bstar">
+       <span id="star"></span><span class="kursor"></span>
+     </div>
+     <div class="terbit">
+     <span id="terbit"></span><span class="kursor"></span>
+</div>
+   </div>
+   </div>
+  </div>
+</body>
+<script src="https://code.jquery.com/jquery-4.0.0.js" integrity="sha256-9fsHeVnKBvqh3FB2HYu7g2xseAZ5MlN6Kz/qnkASV8U=" crossorigin="anonymous">
+</script>
+<script>
+  function teksisi(durasi, idteks, teksAsli, idkursor, kursor,) {
+  $(idkursor).html(kursor)
+  let i = 0;
+  function ketik() {
+    if (i < teksAsli.length) {
+      if (teksAsli.substr(i, 4) === "<br>") {
+        $(idteks).html(teksAsli.substr(0, i + 4));
+        i += 4;
+      } else {
+        $(idteks).html(teksAsli.substr(0, i + 1));
+        i++;
+      }
+      setTimeout(ketik, durasi);
+    }
+  }
+   ketik();
+ }
+ setTimeout(()=> {
+ teksisi(
+ 90,
+ '#teks',
+ 'Marhamah, ngkau bagai bintang - bintang yang selalu bersinar dan menghiasi hidupku, tanpamu hidupku bagai malam yang gelap gulita.<br>hehe ( ^ ‿ ^ )',
+ '#kur1',
+ '|'
+ )
+ }, 300)
+ setTimeout(()=> {
+ teksisi(10, '#star', '................................<span>*</span>................................<br>............................<span>*</span>......<span>*</span>............................<br>.........................<span>*</span>............<span>*</span>.........................<br>.......<span>*</span>...<span>*</span>...<span>*</span>...<span>*</span>..................<span>*</span>...<span>*</span>...<span>*</span>...<span>*</span>.......<br>...........<span>*</span>........................................<span>*</span>...........<br>...............<span>*</span>................................<span>*</span>...............<br>.................<span>*</span>.............<span>*</span>............<span>*</span>..................<br>..............<span>*</span>...........<span>*</span>........<span>*</span>..........<span>*</span>...............<br>...........<span>*</span>......<span>*</span>........................<span>*</span>......<span>*</span>...........<br>........<span>*</span>..............................................<span>*</span>........<br>...........................<span class="bbin">My Star</span>.........................<br>........................<span class="bbin">Marhamah</span>.......................')
+ }, 13800)
+ setTimeout(()=> {
+  teksisi(80, '#terbit', 'Muhammad Rafiqi, 9 Maret 2026.')
+}, 27000)
+</script>
+</html>
