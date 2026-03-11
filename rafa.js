@@ -85,10 +85,10 @@ const animasi = {
   function kt() {
     if (i < teksAsli.length) {
       if (teksAsli.substr(i, 4) === "<br>") {
-        $(idteks).append(teksAsli.substr(0, i + 4));
+        $(idteks).html(teksAsli.substr(0, i + 4));
         i += 4;
       } else {
-        $(idteks).append(teksAsli.substr(0, i + 1));
+        $(idteks).html(teksAsli.substr(0, i + 1));
         i++;
       }
       setTimeout(kt, durasi);
