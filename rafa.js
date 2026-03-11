@@ -76,3 +76,25 @@ if (head) {
   document.html.appendChild(head)
 }}
 }
+
+
+const animasi = {
+  ketik: function (durasi, idteks, teksAsli, lanjut, idkursor, kursor,) {
+  $(idkursor).html(kursor)
+  let i = 0;
+  function kt() {
+    if (i < teksAsli.length) {
+      if (teksAsli.substr(i, 4) === "<br>") {
+        $(idteks).html(teksAsli.substr(0, i + 4));
+        i += 4;
+      } else {
+        $(idteks).html(teksAsli.substr(0, i + 1));
+        i++;
+      }
+      setTimeout(kt, durasi);
+    } else {
+      lanjut()
+    }
+  }
+   kt();
+ }}
