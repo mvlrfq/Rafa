@@ -74,6 +74,18 @@ if (head) {
   head = document.createElement('head');
   head.innerHTML += csst
   document.html.appendChild(head)
+}},
+  moon: function(selectorParent){
+         const m = '<div class="sky"><div class="bmoon"><div class="moon"></div></div></div>'
+         document.querySelector(selectorParentParent).innerHTML += m
+         const stlMon1 = '<style>.sky {position: relative; width: 100%;height: 100%;overflow: visible;}.moon {position: relative;width: 100%;height: 100%;border-radius: 50%;box-shadow: 30px 10px 0 0 #f6e58d;filter: drop-shadow(0 0 30px #f9ca24);animation: float 6s ease-in-out infinite;}@keyframes float {0% , 100% {transform: translateY(0) rotate(-10deg);}50% {transform: translateY(-20px) rotate(5deg);}}.star {position: absolute;background: white;border-radius: 50%;opacity: 0.5;animation: twinkle 2s infinite ease-in-out;}.s1 { top: 10% ;left: 20% ;width: 3px;height: 3px;}.s2 {top: 30% ;left: 70%;width: 2px;height: 2px;animation-delay: 1s; }.s3 { top: 50% ;left: 15% ;width: 4px;height: 4px;animation-delay: 0.5s; }@keyframes twinkle {0% , 100% { opacity: 0.3;transform: scale(1); }50% { opacity: 1;transform: scale(1.2); }}.bmoon {padding: 20px;width: 95% ;height: 95% ;transform: translateX(-18%);box-sizing: border-box;}</style>'
+ let head = document.querySelector('head')
+ if (head) {
+  head.innerHTML += stlMon1
+} else {
+  head = document.createElement('head');
+  head.innerHTML += stlMon1
+  document.html.appendChild(head)
 }}
 }
 
