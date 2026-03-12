@@ -22,7 +22,7 @@ if (dcepatRotasi) {
     return
   }
 } else {
-  dcepatRotasi = '40'
+  dcepatRotasi = '60'
 }
 if (dtebalSinar) {
   if(typeof dtebalSinar === "string"){
