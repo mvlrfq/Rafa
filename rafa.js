@@ -1,8 +1,8 @@
 const embed = {
-  sun: function(idParent,dbesarInti,dtebalSinar,dcepatRotasi,arah,dwarnaInti,dwarnaSinar) {
-  let cn = idParent.replaceAll("#", "")
+  sun: function(selectorParent,dbesarInti,dtebalSinar,dcepatRotasi,arah,dwarnaInti,dwarnaSinar) {
+  let cn = selectorParent.replaceAll(/[#.]/g, "")
 const matahari = '<div class="sun-container'+cn+'"><svg class="sun-beams'+cn+'" viewBox="0 0 100 100" preserveAspectRatio="none"><defs><path id="beam-path" d="M 50,0 C 45,10 55,10 50,20 C 45,30 55,30 50,40" /></defs><use href="#beam-path" transform="rotate(0 50 50)" /><use href="#beam-path" transform="rotate(30 50 50)" /><use href="#beam-path" transform="rotate(60 50 50)" /><use href="#beam-path" transform="rotate(90 50 50)" /><use href="#beam-path" transform="rotate(120 50 50)" /><use href="#beam-path" transform="rotate(150 50 50)" /><use href="#beam-path" transform="rotate(180 50 50)" /><use href="#beam-path" transform="rotate(210 50 50)" /><use href="#beam-path" transform="rotate(240 50 50)" /><use href="#beam-path" transform="rotate(270 50 50)" /><use href="#beam-path" transform="rotate(300 50 50)" /><use href="#beam-path" transform="rotate(330 50 50)" /></svg><div class="sun-core'+cn+'"></div></div>'
-document.getElementById(idParent).innerHTML += matahari
+document.querySelector(selectorParent).innerHTML += matahari
 let head = document.querySelector('head')
 if (dbesarInti) {
   if (typeof dbesarInti === "string"){
