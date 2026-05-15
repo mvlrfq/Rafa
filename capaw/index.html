@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="id" translate="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sang Bintang</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Dots&display=swap&family=Changa+One:ital@0;1&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Special+Elite&display=swap" rel="stylesheet">
+</head>
+<style>
+  * {
+    margin: 0px;
+    padding: 0px;
+  }
+  html, body {
+  height: 100%;
+  background-color: lightgray;
+}
+
+.container {
+  background-color: lightgray;
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+}
+.bjudul {
+  background-color: darkseagreen;
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+}
+.judul {
+  color: rgba(0, 0, 0, 0.58);
+  font-family: "Changa One", sans-serif;
+  font-style: italic;
+  font-weight: 100;
+}
+.bteks {
+  margin-top: 30px;
+  margin-right: 18px;
+  margin-left: 18px;
+  height: 85%;
+  text-align: center;
+  overflow: auto;
+}
+#teks{
+  font-family: "Zen Dots", sans-serif;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.58);
+}
+ .kursor {
+  font-weight: bold;
+  color: rgba(0, 0, 0, 0.58);
+  animation: kedip 0.7s infinite;
+}
+@keyframes kedip {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.bstar {
+  border-radius: 10px;
+  text-align: justify;
+  margin-bottom: 30px;
+}
+.lkertas{
+  width: 300px;
+  border: 2px solid darkseagreen;
+}
+.lkteks {
+  width: 230px;
+}
+.bg {
+  background-color : rgba(255, 255, 240, 1);
+}
+.bungstr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+}
+.star {
+font-size: 15px;
+color: lightgray;
+}
+.clnstar, .clnstar2 {
+  font-size: 15px;
+  color: black;
+}
+#star span, #clnstar span, .clnstar2 span {
+  font-size: 15px;
+  color: rgba(0, 0, 0, 0.58);
+}
+.bbin {
+  font-family: sans-serif;
+  font-size: 5px;
+}
+#terbit {
+  z-index: 10;
+}
+.terbit {
+  position: fixed;
+  bottom: 0px;
+  padding: 5px 5px 10px 5px;
+  background-color: lightgray;
+}
+.terbit span {
+  font-size: 14px;
+  font-family: "Courier Prime", monospace;
+  color: rgba(0, 0, 0, 0.58);
+}
+.clnbstar {
+position: absolute;
+padding: 0px 10px 0px 10px;
+box-sizing: border-box;
+display: flex;
+flex-direction: column;
+}
+.arab {
+display: flex;
+flex-direction: row;
+width: 100%;
+height: 100%;
+}
+.farhan {
+  color: rgba(0, 0, 0, 0.58);
+}
+.bul {
+  width: 150px;
+  height: 150px;
+  overflow: hidden;
+  border-radius: 50%;
+  padding: 2px;
+  
+}
+</style>
+<body>
+  <div class="container">
+    <div class="bjudul">
+    <h1 class="judul">SAPA ATUL'UZMA</h1>
+    </div>
+   <div id="bteks" class="bteks">
+     <span id="teks"></span><span class="kursor" id="kur1"></span>
+     <div class="bungstr">
+     <div id="bstar" class="bstar bg lkertas">
+       <span class="star" id="star"></span><span class="kursor"></span>
+     </div>
+     <div id="clnbstar" class="bstar clnbstar lkteks">
+       <div class="arab" dir="rtl">
+       <span class="clnstar" id="clnstar"><span class="kursor" id="kur2"></span></span>
+       </div>
+       <span class="clnstar2" id="clnstar2"><span class="kursor" id="kur3"></span></span>
+     </div>
+     <div class="bfarhan">
+       <h1 id="farhan" class="farhan"></h1>
+     </div>
+     <div class="bul"></div>
+     <div class="terbit">
+     <span id="terbit"></span><span class="kursor"></span>
+ </div>
+   </div>
+   </div>
+  </div>
+</body>
+<script src="https://code.jquery.com/jquery-4.0.0.js" integrity="sha256-9fsHeVnKBvqh3FB2HYu7g2xseAZ5MlN6Kz/qnkASV8U=" crossorigin="anonymous">
+</script>
+<script src="https://mvlrfq.github.io/Rafa/rafa.js"></script>
+<script>
+embed.sun('.bul','70px','10','5','r')
+ setTimeout(()=> {
+ animasi.ketik(
+ 90,
+ '#teks',
+ "Assalamu'alaikum dedek abanggg yang cangattt abangg cayangiii 🫶🏻<br>pasti ayang capaw kalo cenyum kaya gini:<br>(✿◠‿◠)(✿◠‿◠)(✿◠‿◠)<br>manis bangett cenyum nyah",
+ jalan2,
+ '#kur1',
+ '|'
+ )
+ }, 300)
+ let titik = '................................................................................<br>'
+ let rpt = titik.repeat(9)
+ function jalan2() {
+ animasi.ketik(2, '#star', rpt)
+ setTimeout(function() {
+ $('.clnbstar').css('width', '300px')
+ animasi.ketik(90, '#clnstar', '<br>عِنْدَمَا أَرَى الدُّنْيَا فَأَتَذَكَّرُكِ<br>وَعِنْدَمَا أَرَاكِ فَأَنْسَى الدُّنْيَا', jalan3, '#kur2', '|')
+ }, 1500)
+ }
+ 
+ function jalan3(){
+   animasi.ketik(90, '#clnstar2', '<br>Ketika aku melihat dunia, maka aku teringat dirimu,<br>dan ketika aku melihat dirimu, aku lupa akan dunia.',jalan4)
+ }
+ function jalan4(){
+   animasi.ketik(100,'#farhan','فرحا أن أحبك<br>Ayang abang bagaikan "MATAHARI"',jalan5)
+ }
+ function jalan5() {
+  animasi.ketik(80, '#terbit', 'Muhammad Rafiqi, 9 Maret 2026.')
+}
+function croll(idparent, idcroll) {
+const container = document.querySelector(idparent);
+const content = document.querySelector(idcroll);
+const scrollToBottom = () => {
+  container.scrollTo({
+    top: container.scrollHeight,
+    behavior: 'smooth'
+  });
+};
+const observer = new MutationObserver(() => {
+  const threshold = 999;
+  const position = container.scrollTop + container.clientHeight;
+  const isAtBottom = container.scrollHeight - position <= threshold;
+  if (isAtBottom) {
+    scrollToBottom();
+  } else {
+    console.log("User sedang melihat ke atas, auto-scroll dihentikan sementara.");
+  }
+});
+observer.observe(content, {
+  childList: true,
+  subtree: true,
+  characterData: true
+});
+}
+$('#bstar').on('scroll', function() {
+  // Hitung persentase scroll di elemen kiri
+  var scrollTop = $(this).scrollTop();
+  var scrollHeight = $(this)[0].scrollHeight - $(this).outerHeight();
+  var scrollPercent = scrollTop / scrollHeight;
+  
+  // Terapkan persentase tersebut ke elemen kanan
+  var target = $('#clnbstar');
+  var targetHeight = target[0].scrollHeight - target.outerHeight();
+  target.scrollTop(scrollPercent * targetHeight);
+});
+</script>
+</html>
