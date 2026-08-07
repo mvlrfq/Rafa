@@ -50,6 +50,13 @@ local function makeDraggable(guiObject, dragHandle)
 	end)
 end
 
+-- HELPER UTAMA: MATEMATIKA KOORDINAT LENGKAP & PRESISI (TERPADU)
+local function calculateOffsetCFrame(targetCFrame, x, y, z, rotH, rotV)
+	return targetCFrame 
+		* CFrame.new(x, y, z) 
+		* CFrame.fromEulerAnglesYXZ(math.rad(rotV), math.rad(rotH), 0)
+end
+
 -- HELPER: PARSE OFFSET 5 PARAMETER (X, Y, Z, RotH, RotV)
 local function parseOffset5(str)
 	if not str or str == "" then return nil end
@@ -315,9 +322,9 @@ createControl(7, "Samping (X):", function() return tostring(offsetX) end,
 	function() offsetX = offsetX - 0.5 end, 
 	function() offsetX = offsetX + 0.5 end)
 
-createControl(8, "Jarak (Z):", function() return tostring(-offsetZ) end, 
-	function() offsetZ = offsetZ + 0.5 end, 
-	function() offsetZ = offsetZ - 0.5 end)
+createControl(8, "Jarak (Z):", function() return tostring(offsetZ) end, 
+	function() offsetZ = offsetZ - 0.5 end, 
+	function() offsetZ = offsetZ + 0.5 end)
 
 createControl(9, "Putar H (Y):", function() return tostring(rotationY) .. "°" end, 
 	function() rotationY = (rotationY - 15) % 360 end, 
@@ -350,13 +357,6 @@ Sep2.Size = UDim2.new(1, 0, 0, 2)
 Sep2.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
 Sep2.BorderSizePixel = 0
 Sep2.Parent = ScrollFrame
-
--- HELPER BESPOKE ROTASI PRESISI INDEPENDEN
-local function getCleanCFrame(posOffset, rotH, rotV)
-	return CFrame.new(posOffset) 
-		* CFrame.Angles(0, math.rad(rotH), 0) 
-		* CFrame.Angles(math.rad(rotV), 0, 0)
-end
 
 -- 5. TITIK KOORDINAT RELATIF SET A & SET B
 local function createRelativeCoordInput(order, placeholder, setBtnText)
@@ -398,24 +398,22 @@ local function createRelativeCoordInput(order, placeholder, setBtnText)
 		local targetPlayer = findTargetPlayer(NameBox.Text)
 		local myChar = LocalPlayer.Character
 		
-		if not targetPlayer or not targetPlayer.Character then
-			box.Text = string.format("%.1f, %.1f, %.1f, %.1f, %.1f", offsetX, offsetY, offsetZ, rotationY, rotationX)
-			return
-		end
-
+		local targetPart = targetPlayer and targetPlayer.Character and (isHeadMode and targetPlayer.Character:FindFirstChild("Head") or targetPlayer.Character:FindFirstChild("HumanoidRootPart"))
 		local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
-		local targetPart = isHeadMode and targetPlayer.Character:FindFirstChild("Head") or targetPlayer.Character:FindFirstChild("HumanoidRootPart")
 
-		if myHRP and targetPart then
-			local localOffset = targetPart.CFrame:VectorToObjectSpace(myHRP.Position - targetPart.Position)
+		if targetPart and myHRP then
+			-- Ekstraksi relatif CFrame menggunakan ToEulerAnglesYXZ
 			local relCF = targetPart.CFrame:ToObjectSpace(myHRP.CFrame)
+			local pos = relCF.Position
+			local rx, ry, _ = relCF:ToEulerAnglesYXZ()
 			
-			-- Ekstraksi sudut H dan V secara presisi tanpa guncangan gimbal lock
-			local lookVector = relCF.LookVector
-			local rotH = math.deg(math.atan2(-lookVector.X, -lookVector.Z))
-			local rotV = math.deg(math.asin(lookVector.Y))
+			local rotV = math.deg(rx)
+			local rotH = math.deg(ry)
 
-			box.Text = string.format("%.1f, %.1f, %.1f, %.1f, %.1f", localOffset.X, localOffset.Y, localOffset.Z, rotH, rotV)
+			box.Text = string.format("%.1f, %.1f, %.1f, %.1f, %.1f", pos.X, pos.Y, pos.Z, rotH, rotV)
+		else
+			-- Jika tidak menempel pada target, gunakan koordinat dari Custom Offset manual
+			box.Text = string.format("%.1f, %.1f, %.1f, %.1f, %.1f", offsetX, offsetY, offsetZ, rotationY, rotationX)
 		end
 	end)
 
@@ -579,8 +577,8 @@ local function toggleSticky()
 					myHRP.AssemblyLinearVelocity = Vector3.zero
 					myHRP.AssemblyAngularVelocity = Vector3.zero
 
-					-- Posisi dan rotasi terpisah secara ketat
-					myHRP.CFrame = targetPart.CFrame * getCleanCFrame(Vector3.new(offsetX, offsetY, offsetZ), rotationY, rotationX)
+					-- Menggunakan helper terpadu
+					myHRP.CFrame = calculateOffsetCFrame(targetPart.CFrame, offsetX, offsetY, offsetZ, rotationY, rotationX)
 				end
 			end
 		end)
@@ -621,12 +619,12 @@ function togglePatrol()
 		end
 
 		local posA, rotHA, rotVA = parseOffset5(OffsetABox.Text)
-		posA = posA or Vector3.new(-5, 0, -2)
+		posA = posA or Vector3.new(-5, 0, -1.5)
 		rotHA = rotHA or 180
 		rotVA = rotVA or 0
 
 		local posB, rotHB, rotVB = parseOffset5(OffsetBBox.Text)
-		posB = posB or Vector3.new(5, 0, -2)
+		posB = posB or Vector3.new(5, 0, -1.5)
 		rotHB = rotHB or 180
 		rotVB = rotVB or 0
 
@@ -659,8 +657,8 @@ function togglePatrol()
 					local currentRotH = rotHA + (rotHB - rotHA) * alpha
 					local currentRotV = rotVA + (rotVB - rotVA) * alpha
 
-					-- Rotasi H dan V diterapkan secara terpisah dan konsisten
-					myHRP.CFrame = targetPart.CFrame * getCleanCFrame(currentPos, currentRotH, currentRotV)
+					-- Menggunakan helper terpadu (sama persis dengan mode manual)
+					myHRP.CFrame = calculateOffsetCFrame(targetPart.CFrame, currentPos.X, currentPos.Y, currentPos.Z, currentRotH, currentRotV)
 				end
 			end
 		end)
