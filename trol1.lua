@@ -50,15 +50,18 @@ local function makeDraggable(guiObject, dragHandle)
 	end)
 end
 
--- HELPER: PARSE VECTOR3 OFFSET
-local function parseVector3(str)
+-- HELPER: PARSE OFFSET 5 PARAMETER (X, Y, Z, RotH, RotV)
+local function parseOffset5(str)
 	if not str or str == "" then return nil end
 	local nums = {}
 	for num in string.gmatch(str, "[-%d%.]+") do
 		table.insert(nums, tonumber(num))
 	end
 	if #nums >= 3 then
-		return Vector3.new(nums[1], nums[2], nums[3])
+		local pos = Vector3.new(nums[1], nums[2], nums[3])
+		local rotH = nums[4] or 180
+		local rotV = nums[5] or 0
+		return pos, rotH, rotV
 	end
 	return nil
 end
@@ -344,7 +347,7 @@ Sep2.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
 Sep2.BorderSizePixel = 0
 Sep2.Parent = ScrollFrame
 
--- 5. TITIK KOORDINAT RELATIF SET A & SET B (PATROLI)
+-- 5. TITIK KOORDINAT RELATIF SET A & SET B (X, Y, Z, RotH, RotV)
 local function createRelativeCoordInput(order, placeholder, setBtnText)
 	local container = Instance.new("Frame")
 	container.LayoutOrder = order
@@ -385,7 +388,7 @@ local function createRelativeCoordInput(order, placeholder, setBtnText)
 		local myChar = LocalPlayer.Character
 		
 		if not targetPlayer or not targetPlayer.Character then
-			box.Text = string.format("%.1f, %.1f, %.1f", offsetX, offsetY, offsetZ)
+			box.Text = string.format("%.1f, %.1f, %.1f, %.1f, %.1f", offsetX, offsetY, offsetZ, rotationY, rotationX)
 			return
 		end
 
@@ -393,16 +396,23 @@ local function createRelativeCoordInput(order, placeholder, setBtnText)
 		local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
 
 		if myHRP and targetHRP then
-			local relativeVector = targetHRP.CFrame:PointToObjectSpace(myHRP.Position)
-			box.Text = string.format("%.1f, %.1f, %.1f", relativeVector.X, relativeVector.Y, relativeVector.Z)
+			-- Mengambil Posisi Relatif & Rotasi Relatif (H = Y, V = X)
+			local relativeCF = targetHRP.CFrame:ToObjectSpace(myHRP.CFrame)
+			local relPos = relativeCF.Position
+			local rx, ry, _ = relativeCF:ToOrientation()
+			
+			local rotH = math.deg(ry)
+			local rotV = math.deg(rx)
+
+			box.Text = string.format("%.1f, %.1f, %.1f, %.1f, %.1f", relPos.X, relPos.Y, relPos.Z, rotH, rotV)
 		end
 	end)
 
 	return box
 end
 
-local OffsetABox = createRelativeCoordInput(13, "Offset A (X,Y,Z)", "📍 Set A")
-local OffsetBBox = createRelativeCoordInput(14, "Offset B (X,Y,Z)", "📍 Set B")
+local OffsetABox = createRelativeCoordInput(13, "Offset A (X,Y,Z,H,V)", "📍 Set A")
+local OffsetBBox = createRelativeCoordInput(14, "Offset B (X,Y,Z,H,V)", "📍 Set B")
 
 local patrolSpeed = 2.0
 createControl(15, "Kecepatan Patrol:", function() return string.format("%.1f", patrolSpeed) end,
@@ -596,8 +606,15 @@ function togglePatrol()
 			return
 		end
 
-		local offsetA = parseVector3(OffsetABox.Text) or Vector3.new(-5, 0, -2)
-		local offsetB = parseVector3(OffsetBBox.Text) or Vector3.new(5, 0, -2)
+		local posA, rotHA, rotVA = parseOffset5(OffsetABox.Text)
+		posA = posA or Vector3.new(-5, 0, -2)
+		rotHA = rotHA or 180
+		rotVA = rotVA or 0
+
+		local posB, rotHB, rotVB = parseOffset5(OffsetBBox.Text)
+		posB = posB or Vector3.new(5, 0, -2)
+		rotHB = rotHB or 180
+		rotVB = rotVB or 0
 
 		LoopPatrolBtn.Text = "Patroli Target (A <-> B): ON"
 		LoopPatrolBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
@@ -624,9 +641,13 @@ function togglePatrol()
 					myHRP.AssemblyAngularVelocity = Vector3.zero
 
 					local alpha = (math.sin(tick() * patrolSpeed) + 1) / 2
-					local currentOffset = offsetA:Lerp(offsetB, alpha)
+					local currentPos = posA:Lerp(posB, alpha)
+					local currentRotH = rotHA + (rotHB - rotHA) * alpha
+					local currentRotV = rotVA + (rotVB - rotVA) * alpha
 
-					myHRP.CFrame = targetHRP.CFrame * CFrame.new(currentOffset) * CFrame.Angles(0, math.rad(180), 0)
+					myHRP.CFrame = targetHRP.CFrame 
+						* CFrame.new(currentPos) 
+						* CFrame.Angles(math.rad(currentRotV), math.rad(currentRotH), 0)
 				end
 			end
 		end)
