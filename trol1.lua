@@ -50,15 +50,15 @@ local function makeDraggable(guiObject, dragHandle)
 	end)
 end
 
--- HELPER UTAMA: MATEMATIKA KOORDINAT LENGKAP & PRESISI (TERPADU)
+-- HELPER UTAMA: FORMULA KONSISTEN UNTUK SEMUA MODE
 local function calculateOffsetCFrame(targetCFrame, x, y, z, rotH, rotV)
 	return targetCFrame 
 		* CFrame.new(x, y, z) 
 		* CFrame.fromEulerAnglesYXZ(math.rad(rotV), math.rad(rotH), 0)
 end
 
--- HELPER: PARSE OFFSET 5 PARAMETER (X, Y, Z, RotH, RotV)
-local function parseOffset5(str)
+-- HELPER: PARSE OFFSET DENGAN FALLBACK KUSTOM
+local function parseOffset5(str, fallbackH, fallbackV)
 	if not str or str == "" then return nil end
 	local nums = {}
 	for num in string.gmatch(str, "[-%d%.]+") do
@@ -66,14 +66,14 @@ local function parseOffset5(str)
 	end
 	if #nums >= 3 then
 		local pos = Vector3.new(nums[1], nums[2], nums[3])
-		local rotH = nums[4] or 180
-		local rotV = nums[5] or 0
+		local rotH = nums[4] or fallbackH or 180
+		local rotV = nums[5] or fallbackV or 0
 		return pos, rotH, rotV
 	end
 	return nil
 end
 
--- STATUS SYSTEM STATE
+-- SYSTEM STATE
 local isHeadMode = false
 local originalCanCollide = {}
 
@@ -402,7 +402,6 @@ local function createRelativeCoordInput(order, placeholder, setBtnText)
 		local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
 
 		if targetPart and myHRP then
-			-- Ekstraksi relatif CFrame menggunakan ToEulerAnglesYXZ
 			local relCF = targetPart.CFrame:ToObjectSpace(myHRP.CFrame)
 			local pos = relCF.Position
 			local rx, ry, _ = relCF:ToEulerAnglesYXZ()
@@ -412,7 +411,6 @@ local function createRelativeCoordInput(order, placeholder, setBtnText)
 
 			box.Text = string.format("%.1f, %.1f, %.1f, %.1f, %.1f", pos.X, pos.Y, pos.Z, rotH, rotV)
 		else
-			-- Jika tidak menempel pada target, gunakan koordinat dari Custom Offset manual
 			box.Text = string.format("%.1f, %.1f, %.1f, %.1f, %.1f", offsetX, offsetY, offsetZ, rotationY, rotationX)
 		end
 	end)
@@ -577,7 +575,6 @@ local function toggleSticky()
 					myHRP.AssemblyLinearVelocity = Vector3.zero
 					myHRP.AssemblyAngularVelocity = Vector3.zero
 
-					-- Menggunakan helper terpadu
 					myHRP.CFrame = calculateOffsetCFrame(targetPart.CFrame, offsetX, offsetY, offsetZ, rotationY, rotationX)
 				end
 			end
@@ -603,7 +600,7 @@ local function toggleSticky()
 	end
 end
 
--- LOGIKA PATROLI TARGET
+-- LOGIKA PATROLI TARGET (INTERPOLASI QUATERNION / CFRAME LERP)
 function togglePatrol()
 	isPatrolling = not isPatrolling
 
@@ -618,15 +615,16 @@ function togglePatrol()
 			return
 		end
 
-		local posA, rotHA, rotVA = parseOffset5(OffsetABox.Text)
+		-- Parse Offset A & B (fallback otomatis ke nilai Custom Offset jika kosong)
+		local posA, rotHA, rotVA = parseOffset5(OffsetABox.Text, rotationY, rotationX)
 		posA = posA or Vector3.new(-5, 0, -1.5)
-		rotHA = rotHA or 180
-		rotVA = rotVA or 0
 
-		local posB, rotHB, rotVB = parseOffset5(OffsetBBox.Text)
+		local posB, rotHB, rotVB = parseOffset5(OffsetBBox.Text, rotationY, rotationX)
 		posB = posB or Vector3.new(5, 0, -1.5)
-		rotHB = rotHB or 180
-		rotVB = rotVB or 0
+
+		-- Buat CFrame Offset Lokal A & B
+		local cfOffsetA = calculateOffsetCFrame(CFrame.identity, posA.X, posA.Y, posA.Z, rotHA, rotVA)
+		local cfOffsetB = calculateOffsetCFrame(CFrame.identity, posB.X, posB.Y, posB.Z, rotHB, rotVB)
 
 		LoopPatrolBtn.Text = "Patroli Target (A <-> B): ON"
 		LoopPatrolBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
@@ -653,12 +651,10 @@ function togglePatrol()
 					myHRP.AssemblyAngularVelocity = Vector3.zero
 
 					local alpha = (math.sin(tick() * patrolSpeed) + 1) / 2
-					local currentPos = posA:Lerp(posB, alpha)
-					local currentRotH = rotHA + (rotHB - rotHA) * alpha
-					local currentRotV = rotVA + (rotVB - rotVA) * alpha
+					-- Interpolasi CFrame terpadu (murni tanpa angle flip)
+					local currentOffsetCF = cfOffsetA:Lerp(cfOffsetB, alpha)
 
-					-- Menggunakan helper terpadu (sama persis dengan mode manual)
-					myHRP.CFrame = calculateOffsetCFrame(targetPart.CFrame, currentPos.X, currentPos.Y, currentPos.Z, currentRotH, currentRotV)
+					myHRP.CFrame = targetPart.CFrame * currentOffsetCF
 				end
 			end
 		end)
