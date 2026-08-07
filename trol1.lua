@@ -449,7 +449,7 @@ MiniIcon.MouseButton1Click:Connect(function()
 	MainFrame.Visible = true
 end)
 
--- 6. LOGIKA PERBAIKAN FISIKA KARAKTER saat FITUR OFF
+-- 6. LOGIKA PERBAIKAN FISIKA KARAKTER
 local isSticking = false
 local isPatrolling = false
 local isSpectating = false
@@ -483,11 +483,9 @@ local function manageAnimations(character, freeze)
 	end
 end
 
--- MENGEMBALIKAN FISIKA DAN KOLISI NORMAL ROBLOX (TIDAK MERUSAK KEMAMPUAN MENYELAM)
 local function applyStateProtections(humanoid, enable)
 	if not humanoid then return end
 	
-	-- Reset State Bawaan
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, not enable)
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, not enable)
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, not enable)
@@ -507,7 +505,6 @@ local function setNoCollision(character, disableCollision)
 			if disableCollision then
 				part.CanCollide = false
 			else
-				-- PERBAIKAN: HumanoidRootPart HARUS SELALU CanCollide = false!
 				if part.Name == "HumanoidRootPart" then
 					part.CanCollide = false
 				else
@@ -573,7 +570,7 @@ local function toggleSticky()
 		if myChar then
 			local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
 			applyStateProtections(myHumanoid, false)
-			setNoCollision(myChar, false) -- Memulihkan kolisi asli Roblox
+			setNoCollision(myChar, false)
 			manageAnimations(myChar, false)
 		end
 
@@ -640,10 +637,10 @@ function togglePatrol()
 		end
 
 		local myChar = LocalPlayer.Character
-		if myChar me then
+		if myChar then
 			local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
 			applyStateProtections(myHumanoid, false)
-			setNoCollision(myChar, false) -- Memulihkan kolisi asli Roblox
+			setNoCollision(myChar, false)
 			manageAnimations(myChar, false)
 		end
 
