@@ -65,7 +65,7 @@ end
 
 -- 2. GUI UTAMA
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "RelativePatrolGui"
+ScreenGui.Name = "CompleteStickyGui"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.DisplayOrder = 999
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -73,8 +73,8 @@ ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 240, 0, 300)
-MainFrame.Position = UDim2.new(0.5, -120, 0.2, 0)
+MainFrame.Size = UDim2.new(0, 250, 0, 300)
+MainFrame.Position = UDim2.new(0.5, -125, 0.2, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -88,11 +88,11 @@ MainCorner.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 32)
 Title.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
-Title.Text = "   📌 Target Relative Patrol"
+Title.Text = "   📌 Sticky & Patrol Control"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 15
+Title.TextSize = 14
 Title.Parent = MainFrame
 
 local TitleCorner = Instance.new("UICorner")
@@ -157,6 +157,93 @@ UIPad.PaddingLeft = UDim.new(0, 2)
 UIPad.PaddingTop = UDim.new(0, 4)
 UIPad.Parent = ScrollFrame
 
+local function findTargetPlayer(name)
+	if name == "" then return nil end
+	name = string.lower(name)
+	for _, player in pairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer then
+			if string.find(string.lower(player.Name), name) or string.find(string.lower(player.DisplayName), name) then
+				return player
+			end
+		end
+	end
+	return nil
+end
+
+-- Target Name Box
+local NameBox = Instance.new("TextBox")
+NameBox.LayoutOrder = 1
+NameBox.Size = UDim2.new(1, 0, 0, 26)
+NameBox.PlaceholderText = "Ketik Username Target..."
+NameBox.Text = ""
+NameBox.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
+NameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+NameBox.Font = Enum.Font.SourceSans
+NameBox.TextSize = 12
+NameBox.Parent = ScrollFrame
+
+local BoxCorner = Instance.new("UICorner")
+BoxCorner.CornerRadius = UDim.new(0, 5)
+BoxCorner.Parent = NameBox
+
+-- Tombol Toggle Sticky
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.LayoutOrder = 2
+ToggleBtn.Size = UDim2.new(1, 0, 0, 26)
+ToggleBtn.Text = "Aktifkan Lengket: OFF"
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.Font = Enum.Font.SourceSansBold
+ToggleBtn.TextSize = 12
+ToggleBtn.Parent = ScrollFrame
+
+local BtnCorner1 = Instance.new("UICorner")
+BtnCorner1.CornerRadius = UDim.new(0, 5)
+BtnCorner1.Parent = ToggleBtn
+
+-- Tombol Lock Kepala
+local HeadModeBtn = Instance.new("TextButton")
+HeadModeBtn.LayoutOrder = 3
+HeadModeBtn.Size = UDim2.new(1, 0, 0, 26)
+HeadModeBtn.Text = "Lock Ke Kepala: OFF"
+HeadModeBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
+HeadModeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+HeadModeBtn.Font = Enum.Font.SourceSansBold
+HeadModeBtn.TextSize = 12
+HeadModeBtn.Parent = ScrollFrame
+
+local HeadCorner = Instance.new("UICorner")
+HeadCorner.CornerRadius = UDim.new(0, 5)
+HeadCorner.Parent = HeadModeBtn
+
+-- Tombol Spectate
+local SpectateBtn = Instance.new("TextButton")
+SpectateBtn.LayoutOrder = 4
+SpectateBtn.Size = UDim2.new(1, 0, 0, 26)
+SpectateBtn.Text = "Spectate Target: OFF"
+SpectateBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+SpectateBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpectateBtn.Font = Enum.Font.SourceSansBold
+SpectateBtn.TextSize = 12
+SpectateBtn.Parent = ScrollFrame
+
+local BtnCorner2 = Instance.new("UICorner")
+BtnCorner2.CornerRadius = UDim.new(0, 5)
+BtnCorner2.Parent = SpectateBtn
+
+-- Separator 1
+local Sep1 = Instance.new("Frame")
+Sep1.LayoutOrder = 5
+Sep1.Size = UDim2.new(1, 0, 0, 2)
+Sep1.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+Sep1.BorderSizePixel = 0
+Sep1.Parent = ScrollFrame
+
+-- 4. KONTROL MANUAL SUMBU X, Y, Z & ROTASI
+local offsetX, offsetY, offsetZ = 0, 0, -1.5
+local rotationY = 180
+local rotationX = 0
+
 local function createControl(order, labelText, getValueText, onDec, onInc)
 	local container = Instance.new("Frame")
 	container.LayoutOrder = order
@@ -213,44 +300,51 @@ local function createControl(order, labelText, getValueText, onDec, onInc)
 	end)
 end
 
--- Target Name Box
-local NameBox = Instance.new("TextBox")
-NameBox.LayoutOrder = 1
-NameBox.Size = UDim2.new(1, 0, 0, 26)
-NameBox.PlaceholderText = "Ketik Username Target..."
-NameBox.Text = ""
-NameBox.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
-NameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-NameBox.Font = Enum.Font.SourceSans
-NameBox.TextSize = 12
-NameBox.Parent = ScrollFrame
+createControl(6, "Tinggi (Y):", function() return tostring(offsetY) end, 
+	function() offsetY = offsetY - 0.5 end, 
+	function() offsetY = offsetY + 0.5 end)
 
-local BoxCorner = Instance.new("UICorner")
-BoxCorner.CornerRadius = UDim.new(0, 5)
-BoxCorner.Parent = NameBox
+createControl(7, "Samping (X):", function() return tostring(offsetX) end, 
+	function() offsetX = offsetX - 0.5 end, 
+	function() offsetX = offsetX + 0.5 end)
 
-local function findTargetPlayer(name)
-	if name == "" then return nil end
-	name = string.lower(name)
-	for _, player in pairs(Players:GetPlayers()) do
-		if player ~= LocalPlayer then
-			if string.find(string.lower(player.Name), name) or string.find(string.lower(player.DisplayName), name) then
-				return player
-			end
-		end
-	end
-	return nil
-end
+createControl(8, "Jarak (Z):", function() return tostring(-offsetZ) end, 
+	function() offsetZ = offsetZ + 0.5 end, 
+	function() offsetZ = offsetZ - 0.5 end)
 
--- Separator
-local Separator = Instance.new("Frame")
-Separator.LayoutOrder = 2
-Separator.Size = UDim2.new(1, 0, 0, 2)
-Separator.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-Separator.BorderSizePixel = 0
-Separator.Parent = ScrollFrame
+createControl(9, "Putar H (Y):", function() return tostring(rotationY) .. "°" end, 
+	function() rotationY = (rotationY - 15) % 360 end, 
+	function() rotationY = (rotationY + 15) % 360 end)
 
--- 4. INPUT OFFSET KOORDINAT RELATIF TERHADAP TARGET
+createControl(10, "Putar V (X):", function() return tostring(rotationX) .. "°" end, 
+	function() rotationX = (rotationX - 15) % 360 end, 
+	function() rotationX = (rotationX + 15) % 360 end)
+
+local ResetBtn = Instance.new("TextButton")
+ResetBtn.LayoutOrder = 11
+ResetBtn.Size = UDim2.new(1, 0, 0, 22)
+ResetBtn.Text = "Reset Custom Offset"
+ResetBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+ResetBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
+ResetBtn.Font = Enum.Font.SourceSans
+ResetBtn.TextSize = 11
+ResetBtn.Parent = ScrollFrame
+
+ResetBtn.MouseButton1Click:Connect(function()
+	offsetX, offsetY, offsetZ = 0, 0, -1.5
+	rotationY = 180
+	rotationX = 0
+end)
+
+-- Separator 2
+local Sep2 = Instance.new("Frame")
+Sep2.LayoutOrder = 12
+Sep2.Size = UDim2.new(1, 0, 0, 2)
+Sep2.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+Sep2.BorderSizePixel = 0
+Sep2.Parent = ScrollFrame
+
+-- 5. TITIK KOORDINAT RELATIF SET A & SET B (PATROLI)
 local function createRelativeCoordInput(order, placeholder, setBtnText)
 	local container = Instance.new("Frame")
 	container.LayoutOrder = order
@@ -286,12 +380,14 @@ local function createRelativeCoordInput(order, placeholder, setBtnText)
 	btnCorner.CornerRadius = UDim.new(0, 5)
 	btnCorner.Parent = setBtn
 
-	-- AMBIL POSISI RELATIF TERHADAP TARGET SAAT INI
+	-- AMBIL OFFSET SAAT INI (BISA MENGGUNAKAN POPULASI MANUAL X,Y,Z JIKA SEDANG MENEMPEL)
 	setBtn.MouseButton1Click:Connect(function()
 		local targetPlayer = findTargetPlayer(NameBox.Text)
 		local myChar = LocalPlayer.Character
+		
 		if not targetPlayer or not targetPlayer.Character then
-			box.Text = "0, 0, -3" -- Default offset jika target belum ada
+			-- Jika belum kunci target, simpan berdasarkan settingan X, Y, Z manual saat ini
+			box.Text = string.format("%.1f, %.1f, %.1f", offsetX, offsetY, offsetZ)
 			return
 		end
 
@@ -299,7 +395,6 @@ local function createRelativeCoordInput(order, placeholder, setBtnText)
 		local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
 
 		if myHRP and targetHRP then
-			-- Hitung offset posisi lokal dari target ke posisi kita
 			local relativeVector = targetHRP.CFrame:PointToObjectSpace(myHRP.Position)
 			box.Text = string.format("%.1f, %.1f, %.1f", relativeVector.X, relativeVector.Y, relativeVector.Z)
 		end
@@ -308,19 +403,17 @@ local function createRelativeCoordInput(order, placeholder, setBtnText)
 	return box
 end
 
-local OffsetABox = createRelativeCoordInput(3, "Offset A (X,Y,Z)", "📍 Set A")
-local OffsetBBox = createRelativeCoordInput(4, "Offset B (X,Y,Z)", "📍 Set B")
+local OffsetABox = createRelativeCoordInput(13, "Offset A (X,Y,Z)", "📍 Set A")
+local OffsetBBox = createRelativeCoordInput(14, "Offset B (X,Y,Z)", "📍 Set B")
 
--- Speed Patrol
 local patrolSpeed = 2.0
-createControl(5, "Kecepatan Patrol:", function() return string.format("%.1f", patrolSpeed) end,
+createControl(15, "Kecepatan Patrol:", function() return string.format("%.1f", patrolSpeed) end,
 	function() patrolSpeed = math.max(0.2, patrolSpeed - 0.5) end,
 	function() patrolSpeed = math.min(20.0, patrolSpeed + 0.5) end
 )
 
--- Tombol Toggle Loop Patroli Relative Target
 local LoopPatrolBtn = Instance.new("TextButton")
-LoopPatrolBtn.LayoutOrder = 6
+LoopPatrolBtn.LayoutOrder = 16
 LoopPatrolBtn.Size = UDim2.new(1, 0, 0, 26)
 LoopPatrolBtn.Text = "Patroli Target (A <-> B): OFF"
 LoopPatrolBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
@@ -332,21 +425,6 @@ LoopPatrolBtn.Parent = ScrollFrame
 local LoopCorner = Instance.new("UICorner")
 LoopCorner.CornerRadius = UDim.new(0, 5)
 LoopCorner.Parent = LoopPatrolBtn
-
--- Spectate Target
-local SpectateBtn = Instance.new("TextButton")
-SpectateBtn.LayoutOrder = 7
-SpectateBtn.Size = UDim2.new(1, 0, 0, 26)
-SpectateBtn.Text = "Spectate Target: OFF"
-SpectateBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
-SpectateBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-SpectateBtn.Font = Enum.Font.SourceSansBold
-SpectateBtn.TextSize = 12
-SpectateBtn.Parent = ScrollFrame
-
-local SpecCorner = Instance.new("UICorner")
-SpecCorner.CornerRadius = UDim.new(0, 5)
-SpecCorner.Parent = SpectateBtn
 
 -- Status Bar
 local StatusLabel = Instance.new("TextLabel")
@@ -373,10 +451,25 @@ MiniIcon.MouseButton1Click:Connect(function()
 	MainFrame.Visible = true
 end)
 
--- 5. LOGIKA KEAMANAN & ANIMASI
+-- 6. LOGIKA FITUR
+local isSticking = false
 local isPatrolling = false
 local isSpectating = false
+local isHeadMode = false
+
+local renderConnection = nil
 local patrolConnection = nil
+
+HeadModeBtn.MouseButton1Click:Connect(function()
+	isHeadMode = not isHeadMode
+	if isHeadMode then
+		HeadModeBtn.Text = "Lock Ke Kepala: ON"
+		HeadModeBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 180)
+	else
+		HeadModeBtn.Text = "Lock Ke Kepala: OFF"
+		HeadModeBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
+	end
+end)
 
 local function manageAnimations(character, freeze)
 	if not character then return end
@@ -411,11 +504,80 @@ local function setNoCollision(character, enabled)
 	end
 end
 
--- 6. LOGIKA PATROLI RELATIF TERHADAP TARGET
-local function togglePatrol()
+-- LOGIKA STICKY MANUAL (MENGGUNAKAN X, Y, Z & ROTASI CONTROL)
+local function toggleSticky()
+	isSticking = not isSticking
+
+	if isSticking then
+		if isPatrolling then togglePatrol() end
+
+		local targetPlayer = findTargetPlayer(NameBox.Text)
+		if not targetPlayer then
+			StatusLabel.Text = "Target tidak ditemukan!"
+			StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+			isSticking = false
+			return
+		end
+
+		ToggleBtn.Text = "Aktifkan Lengket: ON"
+		ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
+		StatusLabel.Text = "Menempel pada: " .. targetPlayer.DisplayName
+		StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+
+		renderConnection = RunService.RenderStepped:Connect(function()
+			if not isSticking then return end
+
+			local myChar = LocalPlayer.Character
+			local targetChar = targetPlayer.Character
+
+			if myChar and targetChar then
+				local myHRP = myChar:FindFirstChild("HumanoidRootPart")
+				local targetPart = isHeadMode and targetChar:FindFirstChild("Head") or targetChar:FindFirstChild("HumanoidRootPart")
+				local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
+
+				if myHRP and targetPart then
+					applyStateProtections(myHumanoid, true)
+					setNoCollision(myChar, true)
+					manageAnimations(myChar, true)
+
+					myHRP.AssemblyLinearVelocity = Vector3.zero
+					myHRP.AssemblyAngularVelocity = Vector3.zero
+
+					-- Posisi berdasarkan offset & rotasi manual
+					myHRP.CFrame = targetPart.CFrame 
+						* CFrame.new(offsetX, offsetY, offsetZ) 
+						* CFrame.Angles(math.rad(rotationX), math.rad(rotationY), 0)
+				end
+			end
+		end)
+	else
+		if renderConnection then
+			renderConnection:Disconnect()
+			renderConnection = nil
+		end
+
+		local myChar = LocalPlayer.Character
+		if myChar then
+			local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
+			applyStateProtections(myHumanoid, false)
+			setNoCollision(myChar, false)
+			manageAnimations(myChar, false)
+		end
+
+		ToggleBtn.Text = "Aktifkan Lengket: OFF"
+		ToggleBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+		StatusLabel.Text = "Status: Tidak Aktif"
+		StatusLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
+	end
+end
+
+-- LOGIKA PATROLI TARGET (A <-> B)
+function togglePatrol()
 	isPatrolling = not isPatrolling
 
 	if isPatrolling then
+		if isSticking then toggleSticky() end
+
 		local targetPlayer = findTargetPlayer(NameBox.Text)
 		if not targetPlayer then
 			StatusLabel.Text = "Target tidak ditemukan!"
@@ -424,8 +586,8 @@ local function togglePatrol()
 			return
 		end
 
-		local offsetA = parseVector3(OffsetABox.Text) or Vector3.new(-5, 0, -2) -- Default kiri target
-		local offsetB = parseVector3(OffsetBBox.Text) or Vector3.new(5, 0, -2)  -- Default kanan target
+		local offsetA = parseVector3(OffsetABox.Text) or Vector3.new(-5, 0, -2)
+		local offsetB = parseVector3(OffsetBBox.Text) or Vector3.new(5, 0, -2)
 
 		LoopPatrolBtn.Text = "Patroli Target (A <-> B): ON"
 		LoopPatrolBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
@@ -451,11 +613,9 @@ local function togglePatrol()
 					myHRP.AssemblyLinearVelocity = Vector3.zero
 					myHRP.AssemblyAngularVelocity = Vector3.zero
 
-					-- Interpolasi titik A ke B secara periodik
 					local alpha = (math.sin(tick() * patrolSpeed) + 1) / 2
 					local currentOffset = offsetA:Lerp(offsetB, alpha)
 
-					-- Menempel pada target sesuai Offset lokal (Karakter Target adalah pusat relatifnya)
 					myHRP.CFrame = targetHRP.CFrame * CFrame.new(currentOffset) * CFrame.Angles(0, math.rad(180), 0)
 				end
 			end
@@ -512,5 +672,6 @@ local function toggleSpectate()
 	end
 end
 
+ToggleBtn.MouseButton1Click:Connect(toggleSticky)
 LoopPatrolBtn.MouseButton1Click:Connect(togglePatrol)
 SpectateBtn.MouseButton1Click:Connect(toggleSpectate)
