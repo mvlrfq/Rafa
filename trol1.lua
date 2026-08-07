@@ -68,6 +68,7 @@ end
 
 -- STATUS SYSTEM STATE
 local isHeadMode = false
+local originalCanCollide = {}
 
 -- 2. GUI UTAMA
 local ScreenGui = Instance.new("ScreenGui")
@@ -350,7 +351,7 @@ Sep2.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
 Sep2.BorderSizePixel = 0
 Sep2.Parent = ScrollFrame
 
--- 5. TITIK KOORDINAT RELATIF SET A & SET B (PRESISI DENGAN PERSUMBUAN LOKAL)
+-- 5. TITIK KOORDINAT RELATIF SET A & SET B (PENANGANAN KONVERSI KONSISTEN YXZ)
 local function createRelativeCoordInput(order, placeholder, setBtnText)
 	local container = Instance.new("Frame")
 	container.LayoutOrder = order
@@ -399,12 +400,11 @@ local function createRelativeCoordInput(order, placeholder, setBtnText)
 		local targetPart = isHeadMode and targetPlayer.Character:FindFirstChild("Head") or targetPlayer.Character:FindFirstChild("HumanoidRootPart")
 
 		if myHRP and targetPart then
-			-- Konversi vektor offset murni terhadap orientasi target agar persumbuan X, Y, Z sempurna
 			local localOffset = targetPart.CFrame:VectorToObjectSpace(myHRP.Position - targetPart.Position)
-			
-			-- Hitung rotasi relatif lokal
 			local relCF = targetPart.CFrame:ToObjectSpace(myHRP.CFrame)
-			local rx, ry, _ = relCF:ToOrientation()
+			
+			-- Menggunakan Euler YXZ agar presisi dengan pembentukan CFrame.fromEulerAnglesYXZ
+			local rx, ry, _ = relCF:ToEulerAnglesYXZ()
 			
 			local rotH = math.deg(ry)
 			local rotV = math.deg(rx)
@@ -464,7 +464,7 @@ MiniIcon.MouseButton1Click:Connect(function()
 	MainFrame.Visible = true
 end)
 
--- 6. LOGIKA PERBAIKAN FISIKA KARAKTER
+-- 6. LOGIKA FISIKA KARAKTER & MENYELAM AIR
 local isSticking = false
 local isPatrolling = false
 local isSpectating = false
@@ -504,6 +504,8 @@ local function applyStateProtections(humanoid, enable)
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, not enable)
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, not enable)
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, not enable)
+	
+	-- Memastikan Swimming dan Freefall SELALU aktif agar bisa menyelam di air
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming, true)
 	
@@ -512,20 +514,25 @@ local function applyStateProtections(humanoid, enable)
 	end
 end
 
+-- MENJAGA COLLISION ASLI AGAR PERGERAKAN AIR/DIVE BEKERJA NORMAL
 local function setNoCollision(character, disableCollision)
 	if not character then return end
 	for _, part in pairs(character:GetDescendants()) do
 		if part:IsA("BasePart") then
 			if disableCollision then
+				if originalCanCollide[part] == nil then
+					originalCanCollide[part] = part.CanCollide
+				end
 				part.CanCollide = false
 			else
-				if part.Name == "HumanoidRootPart" then
-					part.CanCollide = false
-				else
-					part.CanCollide = true
+				if originalCanCollide[part] ~= nil then
+					part.CanCollide = originalCanCollide[part]
 				end
 			end
 		end
+	end
+	if not disableCollision then
+		table.clear(originalCanCollide)
 	end
 end
 
@@ -570,7 +577,7 @@ local function toggleSticky()
 
 					myHRP.CFrame = targetPart.CFrame 
 						* CFrame.new(offsetX, offsetY, offsetZ) 
-						* CFrame.Angles(math.rad(rotationX), math.rad(rotationY), 0)
+						* CFrame.fromEulerAnglesYXZ(math.rad(rotationX), math.rad(rotationY), 0)
 				end
 			end
 		end)
@@ -595,7 +602,7 @@ local function toggleSticky()
 	end
 end
 
--- LOGIKA PATROLI TARGET (PERSUMBUAN PRESISI)
+-- LOGIKA PATROLI TARGET
 function togglePatrol()
 	isPatrolling = not isPatrolling
 
@@ -649,10 +656,10 @@ function togglePatrol()
 					local currentRotH = rotHA + (rotHB - rotHA) * alpha
 					local currentRotV = rotVA + (rotVB - rotVA) * alpha
 
-					-- Transformasi presisi tanpa deviasi matriks
+					-- Menggunakan CFrame.fromEulerAnglesYXZ agar rotasi H dan V tepat searah
 					myHRP.CFrame = targetPart.CFrame 
 						* CFrame.new(currentPos) 
-						* CFrame.Angles(math.rad(currentRotV), math.rad(currentRotH), 0)
+						* CFrame.fromEulerAnglesYXZ(math.rad(currentRotV), math.rad(currentRotH), 0)
 				end
 			end
 		end)
