@@ -66,6 +66,9 @@ local function parseOffset5(str)
 	return nil
 end
 
+-- STATUS SYSTEM STATE
+local isHeadMode = false
+
 -- 2. GUI UTAMA
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "CompleteStickyGui"
@@ -393,11 +396,11 @@ local function createRelativeCoordInput(order, placeholder, setBtnText)
 		end
 
 		local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
-		local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+		-- Mendukung pilihan Lock ke Kepala saat Ambil Koordinat Set A/B
+		local targetPart = isHeadMode and targetPlayer.Character:FindFirstChild("Head") or targetPlayer.Character:FindFirstChild("HumanoidRootPart")
 
-		if myHRP and targetHRP then
-			-- Mengambil Posisi Relatif & Rotasi Relatif (H = Y, V = X)
-			local relativeCF = targetHRP.CFrame:ToObjectSpace(myHRP.CFrame)
+		if myHRP and targetPart then
+			local relativeCF = targetPart.CFrame:ToObjectSpace(myHRP.CFrame)
 			local relPos = relativeCF.Position
 			local rx, ry, _ = relativeCF:ToOrientation()
 			
@@ -463,7 +466,6 @@ end)
 local isSticking = false
 local isPatrolling = false
 local isSpectating = false
-local isHeadMode = false
 
 local renderConnection = nil
 local patrolConnection = nil
@@ -591,7 +593,7 @@ local function toggleSticky()
 	end
 end
 
--- LOGIKA PATROLI TARGET
+-- LOGIKA PATROLI TARGET (TERINTEGRASI LOCK KEPALA)
 function togglePatrol()
 	isPatrolling = not isPatrolling
 
@@ -629,10 +631,11 @@ function togglePatrol()
 
 			if myChar and targetChar then
 				local myHRP = myChar:FindFirstChild("HumanoidRootPart")
-				local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
+				-- Menggunakan Kepala jika isHeadMode bernilai true
+				local targetPart = isHeadMode and targetChar:FindFirstChild("Head") or targetChar:FindFirstChild("HumanoidRootPart")
 				local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
 
-				if myHRP and targetHRP then
+				if myHRP and targetPart then
 					applyStateProtections(myHumanoid, true)
 					setNoCollision(myChar, true)
 					manageAnimations(myChar, true)
@@ -645,7 +648,7 @@ function togglePatrol()
 					local currentRotH = rotHA + (rotHB - rotHA) * alpha
 					local currentRotV = rotVA + (rotVB - rotVA) * alpha
 
-					myHRP.CFrame = targetHRP.CFrame 
+					myHRP.CFrame = targetPart.CFrame 
 						* CFrame.new(currentPos) 
 						* CFrame.Angles(math.rad(currentRotV), math.rad(currentRotH), 0)
 				end
