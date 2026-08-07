@@ -351,7 +351,14 @@ Sep2.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
 Sep2.BorderSizePixel = 0
 Sep2.Parent = ScrollFrame
 
--- 5. TITIK KOORDINAT RELATIF SET A & SET B (PENANGANAN KONVERSI KONSISTEN YXZ)
+-- HELPER BESPOKE ROTASI PRESISI INDEPENDEN
+local function getCleanCFrame(posOffset, rotH, rotV)
+	return CFrame.new(posOffset) 
+		* CFrame.Angles(0, math.rad(rotH), 0) 
+		* CFrame.Angles(math.rad(rotV), 0, 0)
+end
+
+-- 5. TITIK KOORDINAT RELATIF SET A & SET B
 local function createRelativeCoordInput(order, placeholder, setBtnText)
 	local container = Instance.new("Frame")
 	container.LayoutOrder = order
@@ -403,11 +410,10 @@ local function createRelativeCoordInput(order, placeholder, setBtnText)
 			local localOffset = targetPart.CFrame:VectorToObjectSpace(myHRP.Position - targetPart.Position)
 			local relCF = targetPart.CFrame:ToObjectSpace(myHRP.CFrame)
 			
-			-- Menggunakan Euler YXZ agar presisi dengan pembentukan CFrame.fromEulerAnglesYXZ
-			local rx, ry, _ = relCF:ToEulerAnglesYXZ()
-			
-			local rotH = math.deg(ry)
-			local rotV = math.deg(rx)
+			-- Ekstraksi sudut H dan V secara presisi tanpa guncangan gimbal lock
+			local lookVector = relCF.LookVector
+			local rotH = math.deg(math.atan2(-lookVector.X, -lookVector.Z))
+			local rotV = math.deg(math.asin(lookVector.Y))
 
 			box.Text = string.format("%.1f, %.1f, %.1f, %.1f, %.1f", localOffset.X, localOffset.Y, localOffset.Z, rotH, rotV)
 		end
@@ -505,7 +511,6 @@ local function applyStateProtections(humanoid, enable)
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, not enable)
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, not enable)
 	
-	-- Memastikan Swimming dan Freefall SELALU aktif agar bisa menyelam di air
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming, true)
 	
@@ -514,7 +519,6 @@ local function applyStateProtections(humanoid, enable)
 	end
 end
 
--- MENJAGA COLLISION ASLI AGAR PERGERAKAN AIR/DIVE BEKERJA NORMAL
 local function setNoCollision(character, disableCollision)
 	if not character then return end
 	for _, part in pairs(character:GetDescendants()) do
@@ -575,9 +579,8 @@ local function toggleSticky()
 					myHRP.AssemblyLinearVelocity = Vector3.zero
 					myHRP.AssemblyAngularVelocity = Vector3.zero
 
-					myHRP.CFrame = targetPart.CFrame 
-						* CFrame.new(offsetX, offsetY, offsetZ) 
-						* CFrame.fromEulerAnglesYXZ(math.rad(rotationX), math.rad(rotationY), 0)
+					-- Posisi dan rotasi terpisah secara ketat
+					myHRP.CFrame = targetPart.CFrame * getCleanCFrame(Vector3.new(offsetX, offsetY, offsetZ), rotationY, rotationX)
 				end
 			end
 		end)
@@ -656,10 +659,8 @@ function togglePatrol()
 					local currentRotH = rotHA + (rotHB - rotHA) * alpha
 					local currentRotV = rotVA + (rotVB - rotVA) * alpha
 
-					-- Menggunakan CFrame.fromEulerAnglesYXZ agar rotasi H dan V tepat searah
-					myHRP.CFrame = targetPart.CFrame 
-						* CFrame.new(currentPos) 
-						* CFrame.fromEulerAnglesYXZ(math.rad(currentRotV), math.rad(currentRotH), 0)
+					-- Rotasi H dan V diterapkan secara terpisah dan konsisten
+					myHRP.CFrame = targetPart.CFrame * getCleanCFrame(currentPos, currentRotH, currentRotV)
 				end
 			end
 		end)
