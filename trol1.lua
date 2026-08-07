@@ -77,17 +77,32 @@ end
 local isHeadMode = false
 local originalCanCollide = {}
 
--- 2. GUI UTAMA
+-- 2. GUI UTAMA (PERSISTEN & ANTI-RESET)
+local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+if playerGui:FindFirstChild("CompleteStickyGui") then
+	playerGui.CompleteStickyGui:Destroy()
+end
+
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "CompleteStickyGui"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.DisplayOrder = 100
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local targetParent = gethui and gethui() or (cloneref and cloneref(game:GetService("CoreGui")) or playerGui)
+ScreenGui.Parent = targetParent
+
+ScreenGui.AncestryChanged:Connect(function(_, parent)
+	if not parent then
+		task.wait(0.1)
+		ScreenGui.Parent = gethui and gethui() or LocalPlayer:WaitForChild("PlayerGui")
+	end
+end)
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 250, 0, 300)
+MainFrame.Size = UDim2.new(0, 250, 0, 280)
 MainFrame.Position = UDim2.new(0.5, -125, 0.2, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 MainFrame.BorderSizePixel = 0
@@ -245,9 +260,24 @@ local BtnCorner2 = Instance.new("UICorner")
 BtnCorner2.CornerRadius = UDim.new(0, 5)
 BtnCorner2.Parent = SpectateBtn
 
+-- Tombol Teleport Ke Target
+local TeleportBtn = Instance.new("TextButton")
+TeleportBtn.LayoutOrder = 5
+TeleportBtn.Size = UDim2.new(1, 0, 0, 26)
+TeleportBtn.Text = "⚡ Teleport Ke Target"
+TeleportBtn.BackgroundColor3 = Color3.fromRGB(60, 120, 180)
+TeleportBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+TeleportBtn.Font = Enum.Font.SourceSansBold
+TeleportBtn.TextSize = 12
+TeleportBtn.Parent = ScrollFrame
+
+local TeleportCorner = Instance.new("UICorner")
+TeleportCorner.CornerRadius = UDim.new(0, 5)
+TeleportCorner.Parent = TeleportBtn
+
 -- Separator 1
 local Sep1 = Instance.new("Frame")
-Sep1.LayoutOrder = 5
+Sep1.LayoutOrder = 6
 Sep1.Size = UDim2.new(1, 0, 0, 2)
 Sep1.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
 Sep1.BorderSizePixel = 0
@@ -314,28 +344,28 @@ local function createControl(order, labelText, getValueText, onDec, onInc)
 	end)
 end
 
-createControl(6, "Tinggi (Y):", function() return tostring(offsetY) end, 
+createControl(7, "Tinggi (Y):", function() return tostring(offsetY) end, 
 	function() offsetY = offsetY - 0.5 end, 
 	function() offsetY = offsetY + 0.5 end)
 
-createControl(7, "Samping (X):", function() return tostring(offsetX) end, 
+createControl(8, "Samping (X):", function() return tostring(offsetX) end, 
 	function() offsetX = offsetX - 0.5 end, 
 	function() offsetX = offsetX + 0.5 end)
 
-createControl(8, "Jarak (Z):", function() return tostring(offsetZ) end, 
+createControl(9, "Jarak (Z):", function() return tostring(offsetZ) end, 
 	function() offsetZ = offsetZ - 0.5 end, 
 	function() offsetZ = offsetZ + 0.5 end)
 
-createControl(9, "Putar H (Y):", function() return tostring(rotationY) .. "°" end, 
+createControl(10, "Putar H (Y):", function() return tostring(rotationY) .. "°" end, 
 	function() rotationY = (rotationY - 15) % 360 end, 
 	function() rotationY = (rotationY + 15) % 360 end)
 
-createControl(10, "Putar V (X):", function() return tostring(rotationX) .. "°" end, 
+createControl(11, "Putar V (X):", function() return tostring(rotationX) .. "°" end, 
 	function() rotationX = (rotationX - 15) % 360 end, 
 	function() rotationX = (rotationX + 15) % 360 end)
 
 local ResetBtn = Instance.new("TextButton")
-ResetBtn.LayoutOrder = 11
+ResetBtn.LayoutOrder = 12
 ResetBtn.Size = UDim2.new(1, 0, 0, 22)
 ResetBtn.Text = "Reset Custom Offset"
 ResetBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
@@ -352,7 +382,7 @@ end)
 
 -- Separator 2
 local Sep2 = Instance.new("Frame")
-Sep2.LayoutOrder = 12
+Sep2.LayoutOrder = 13
 Sep2.Size = UDim2.new(1, 0, 0, 2)
 Sep2.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
 Sep2.BorderSizePixel = 0
@@ -418,17 +448,17 @@ local function createRelativeCoordInput(order, placeholder, setBtnText)
 	return box
 end
 
-local OffsetABox = createRelativeCoordInput(13, "Offset A (X,Y,Z,H,V)", "📍 Set A")
-local OffsetBBox = createRelativeCoordInput(14, "Offset B (X,Y,Z,H,V)", "📍 Set B")
+local OffsetABox = createRelativeCoordInput(14, "Offset A (X,Y,Z,H,V)", "📍 Set A")
+local OffsetBBox = createRelativeCoordInput(15, "Offset B (X,Y,Z,H,V)", "📍 Set B")
 
 local patrolSpeed = 2.0
-createControl(15, "Kecepatan Patrol:", function() return string.format("%.1f", patrolSpeed) end,
+createControl(16, "Kecepatan Patrol:", function() return string.format("%.1f", patrolSpeed) end,
 	function() patrolSpeed = math.max(0.2, patrolSpeed - 0.5) end,
 	function() patrolSpeed = math.min(20.0, patrolSpeed + 0.5) end
 )
 
 local LoopPatrolBtn = Instance.new("TextButton")
-LoopPatrolBtn.LayoutOrder = 16
+LoopPatrolBtn.LayoutOrder = 17
 LoopPatrolBtn.Size = UDim2.new(1, 0, 0, 26)
 LoopPatrolBtn.Text = "Patroli Target (A <-> B): OFF"
 LoopPatrolBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
@@ -466,13 +496,27 @@ MiniIcon.MouseButton1Click:Connect(function()
 	MainFrame.Visible = true
 end)
 
--- 6. LOGIKA FISIKA KARAKTER & MENYELAM AIR
+-- 6. LOGIKA FISIKA KARAKTER & TELEPORTATION
 local isSticking = false
 local isPatrolling = false
 local isSpectating = false
 
 local renderConnection = nil
 local patrolConnection = nil
+
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+	table.clear(originalCanCollide)
+	if isSpectating then
+		task.wait(0.5)
+		local targetPlayer = findTargetPlayer(NameBox.Text)
+		if targetPlayer and targetPlayer.Character then
+			local targetHumanoid = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
+			if targetHumanoid then
+				Camera.CameraSubject = targetHumanoid
+			end
+		end
+	end
+end)
 
 HeadModeBtn.MouseButton1Click:Connect(function()
 	isHeadMode = not isHeadMode
@@ -567,7 +611,7 @@ local function toggleSticky()
 				local targetPart = isHeadMode and targetChar:FindFirstChild("Head") or targetChar:FindFirstChild("HumanoidRootPart")
 				local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
 
-				if myHRP and targetPart then
+				if myHRP and targetPart and myHumanoid and myHumanoid.Health > 0 then
 					applyStateProtections(myHumanoid, true)
 					setNoCollision(myChar, true)
 					manageAnimations(myChar, true)
@@ -600,7 +644,7 @@ local function toggleSticky()
 	end
 end
 
--- LOGIKA PATROLI TARGET (INTERPOLASI QUATERNION / CFRAME LERP)
+-- LOGIKA PATROLI TARGET
 function togglePatrol()
 	isPatrolling = not isPatrolling
 
@@ -615,14 +659,12 @@ function togglePatrol()
 			return
 		end
 
-		-- Parse Offset A & B (fallback otomatis ke nilai Custom Offset jika kosong)
 		local posA, rotHA, rotVA = parseOffset5(OffsetABox.Text, rotationY, rotationX)
 		posA = posA or Vector3.new(-5, 0, -1.5)
 
 		local posB, rotHB, rotVB = parseOffset5(OffsetBBox.Text, rotationY, rotationX)
 		posB = posB or Vector3.new(5, 0, -1.5)
 
-		-- Buat CFrame Offset Lokal A & B
 		local cfOffsetA = calculateOffsetCFrame(CFrame.identity, posA.X, posA.Y, posA.Z, rotHA, rotVA)
 		local cfOffsetB = calculateOffsetCFrame(CFrame.identity, posB.X, posB.Y, posB.Z, rotHB, rotVB)
 
@@ -642,7 +684,7 @@ function togglePatrol()
 				local targetPart = isHeadMode and targetChar:FindFirstChild("Head") or targetChar:FindFirstChild("HumanoidRootPart")
 				local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
 
-				if myHRP and targetPart then
+				if myHRP and targetPart and myHumanoid and myHumanoid.Health > 0 then
 					applyStateProtections(myHumanoid, true)
 					setNoCollision(myChar, true)
 					manageAnimations(myChar, true)
@@ -651,7 +693,6 @@ function togglePatrol()
 					myHRP.AssemblyAngularVelocity = Vector3.zero
 
 					local alpha = (math.sin(tick() * patrolSpeed) + 1) / 2
-					-- Interpolasi CFrame terpadu (murni tanpa angle flip)
 					local currentOffsetCF = cfOffsetA:Lerp(cfOffsetB, alpha)
 
 					myHRP.CFrame = targetPart.CFrame * currentOffsetCF
@@ -679,6 +720,7 @@ function togglePatrol()
 	end
 end
 
+-- LOGIKA SPECTATE TARGET
 local function toggleSpectate()
 	isSpectating = not isSpectating
 	
@@ -710,6 +752,33 @@ local function toggleSpectate()
 	end
 end
 
+-- LOGIKA TELEPORT LANGSUNG KE TARGET
+local function teleportToTarget()
+	local targetPlayer = findTargetPlayer(NameBox.Text)
+	if not targetPlayer or not targetPlayer.Character then
+		StatusLabel.Text = "Target tidak ditemukan!"
+		StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+		return
+	end
+
+	local targetPart = targetPlayer.Character:FindFirstChild("HumanoidRootPart") or targetPlayer.Character:FindFirstChild("Head")
+	local myChar = LocalPlayer.Character
+	local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+
+	if targetPart and myHRP then
+		-- Matikan fitur penempelan/patroli agar posisi tidak tertembak kembali
+		if isSticking then toggleSticky() end
+		if isPatrolling then togglePatrol() end
+
+		-- Teleportasi posisi
+		myHRP.CFrame = targetPart.CFrame * CFrame.new(0, 0, -3)
+		StatusLabel.Text = "Teleport ke: " .. targetPlayer.DisplayName
+		StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+	end
+end
+
+-- CONNECT EVENT BUTTONS
 ToggleBtn.MouseButton1Click:Connect(toggleSticky)
 LoopPatrolBtn.MouseButton1Click:Connect(togglePatrol)
 SpectateBtn.MouseButton1Click:Connect(toggleSpectate)
+TeleportBtn.MouseButton1Click:Connect(teleportToTarget)
