@@ -67,7 +67,7 @@ end
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "CompleteStickyGui"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.DisplayOrder = 999
+ScreenGui.DisplayOrder = 100
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
@@ -380,13 +380,11 @@ local function createRelativeCoordInput(order, placeholder, setBtnText)
 	btnCorner.CornerRadius = UDim.new(0, 5)
 	btnCorner.Parent = setBtn
 
-	-- AMBIL OFFSET SAAT INI (BISA MENGGUNAKAN POPULASI MANUAL X,Y,Z JIKA SEDANG MENEMPEL)
 	setBtn.MouseButton1Click:Connect(function()
 		local targetPlayer = findTargetPlayer(NameBox.Text)
 		local myChar = LocalPlayer.Character
 		
 		if not targetPlayer or not targetPlayer.Character then
-			-- Jika belum kunci target, simpan berdasarkan settingan X, Y, Z manual saat ini
 			box.Text = string.format("%.1f, %.1f, %.1f", offsetX, offsetY, offsetZ)
 			return
 		end
@@ -451,7 +449,7 @@ MiniIcon.MouseButton1Click:Connect(function()
 	MainFrame.Visible = true
 end)
 
--- 6. LOGIKA FITUR
+-- 6. LOGIKA PERBAIKAN FISIKA KARAKTER saat FITUR OFF
 local isSticking = false
 local isPatrolling = false
 local isSpectating = false
@@ -485,26 +483,42 @@ local function manageAnimations(character, freeze)
 	end
 end
 
+-- MENGEMBALIKAN FISIKA DAN KOLISI NORMAL ROBLOX (TIDAK MERUSAK KEMAMPUAN MENYELAM)
 local function applyStateProtections(humanoid, enable)
 	if not humanoid then return end
+	
+	-- Reset State Bawaan
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, not enable)
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, not enable)
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, not enable)
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, not enable)
-	humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, not enable)
-	if enable and humanoid.Sit then humanoid.Sit = false end
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming, true)
+	
+	if enable and humanoid.Sit then 
+		humanoid.Sit = false 
+	end
 end
 
-local function setNoCollision(character, enabled)
+local function setNoCollision(character, disableCollision)
 	if not character then return end
 	for _, part in pairs(character:GetDescendants()) do
 		if part:IsA("BasePart") then
-			part.CanCollide = not enabled
+			if disableCollision then
+				part.CanCollide = false
+			else
+				-- PERBAIKAN: HumanoidRootPart HARUS SELALU CanCollide = false!
+				if part.Name == "HumanoidRootPart" then
+					part.CanCollide = false
+				else
+					part.CanCollide = true
+				end
+			end
 		end
 	end
 end
 
--- LOGIKA STICKY MANUAL (MENGGUNAKAN X, Y, Z & ROTASI CONTROL)
+-- LOGIKA STICKY MANUAL
 local function toggleSticky()
 	isSticking = not isSticking
 
@@ -543,7 +557,6 @@ local function toggleSticky()
 					myHRP.AssemblyLinearVelocity = Vector3.zero
 					myHRP.AssemblyAngularVelocity = Vector3.zero
 
-					-- Posisi berdasarkan offset & rotasi manual
 					myHRP.CFrame = targetPart.CFrame 
 						* CFrame.new(offsetX, offsetY, offsetZ) 
 						* CFrame.Angles(math.rad(rotationX), math.rad(rotationY), 0)
@@ -560,7 +573,7 @@ local function toggleSticky()
 		if myChar then
 			local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
 			applyStateProtections(myHumanoid, false)
-			setNoCollision(myChar, false)
+			setNoCollision(myChar, false) -- Memulihkan kolisi asli Roblox
 			manageAnimations(myChar, false)
 		end
 
@@ -571,7 +584,7 @@ local function toggleSticky()
 	end
 end
 
--- LOGIKA PATROLI TARGET (A <-> B)
+-- LOGIKA PATROLI TARGET
 function togglePatrol()
 	isPatrolling = not isPatrolling
 
@@ -627,10 +640,10 @@ function togglePatrol()
 		end
 
 		local myChar = LocalPlayer.Character
-		if myChar then
+		if myChar me then
 			local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
 			applyStateProtections(myHumanoid, false)
-			setNoCollision(myChar, false)
+			setNoCollision(myChar, false) -- Memulihkan kolisi asli Roblox
 			manageAnimations(myChar, false)
 		end
 
