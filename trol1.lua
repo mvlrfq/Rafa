@@ -350,7 +350,7 @@ Sep2.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
 Sep2.BorderSizePixel = 0
 Sep2.Parent = ScrollFrame
 
--- 5. TITIK KOORDINAT RELATIF SET A & SET B (X, Y, Z, RotH, RotV)
+-- 5. TITIK KOORDINAT RELATIF SET A & SET B (PRESISI DENGAN PERSUMBUAN LOKAL)
 local function createRelativeCoordInput(order, placeholder, setBtnText)
 	local container = Instance.new("Frame")
 	container.LayoutOrder = order
@@ -396,18 +396,20 @@ local function createRelativeCoordInput(order, placeholder, setBtnText)
 		end
 
 		local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
-		-- Mendukung pilihan Lock ke Kepala saat Ambil Koordinat Set A/B
 		local targetPart = isHeadMode and targetPlayer.Character:FindFirstChild("Head") or targetPlayer.Character:FindFirstChild("HumanoidRootPart")
 
 		if myHRP and targetPart then
-			local relativeCF = targetPart.CFrame:ToObjectSpace(myHRP.CFrame)
-			local relPos = relativeCF.Position
-			local rx, ry, _ = relativeCF:ToOrientation()
+			-- Konversi vektor offset murni terhadap orientasi target agar persumbuan X, Y, Z sempurna
+			local localOffset = targetPart.CFrame:VectorToObjectSpace(myHRP.Position - targetPart.Position)
+			
+			-- Hitung rotasi relatif lokal
+			local relCF = targetPart.CFrame:ToObjectSpace(myHRP.CFrame)
+			local rx, ry, _ = relCF:ToOrientation()
 			
 			local rotH = math.deg(ry)
 			local rotV = math.deg(rx)
 
-			box.Text = string.format("%.1f, %.1f, %.1f, %.1f, %.1f", relPos.X, relPos.Y, relPos.Z, rotH, rotV)
+			box.Text = string.format("%.1f, %.1f, %.1f, %.1f, %.1f", localOffset.X, localOffset.Y, localOffset.Z, rotH, rotV)
 		end
 	end)
 
@@ -593,7 +595,7 @@ local function toggleSticky()
 	end
 end
 
--- LOGIKA PATROLI TARGET (TERINTEGRASI LOCK KEPALA)
+-- LOGIKA PATROLI TARGET (PERSUMBUAN PRESISI)
 function togglePatrol()
 	isPatrolling = not isPatrolling
 
@@ -631,7 +633,6 @@ function togglePatrol()
 
 			if myChar and targetChar then
 				local myHRP = myChar:FindFirstChild("HumanoidRootPart")
-				-- Menggunakan Kepala jika isHeadMode bernilai true
 				local targetPart = isHeadMode and targetChar:FindFirstChild("Head") or targetChar:FindFirstChild("HumanoidRootPart")
 				local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
 
@@ -648,6 +649,7 @@ function togglePatrol()
 					local currentRotH = rotHA + (rotHB - rotHA) * alpha
 					local currentRotV = rotVA + (rotVB - rotVA) * alpha
 
+					-- Transformasi presisi tanpa deviasi matriks
 					myHRP.CFrame = targetPart.CFrame 
 						* CFrame.new(currentPos) 
 						* CFrame.Angles(math.rad(currentRotV), math.rad(currentRotH), 0)
