@@ -2,9 +2,16 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
+local CoreGui = game:GetService("CoreGui")
+local isAnimating = false
+local renderConnection = nil
+local defaultRightC0 = nil
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
+if CoreGui:FindFirstChild("DeltaCustomUI") then
+    CoreGui.DeltaCustomUI:Destroy()
+end
 
 -- 1. UTILITY: DRAGGABLE DENGAN BATAS LAYAR
 local function makeDraggable(guiObject, dragHandle)
@@ -140,6 +147,96 @@ MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 MinimizeBtn.Font = Enum.Font.SourceSansBold
 MinimizeBtn.TextSize = 18
 MinimizeBtn.Parent = Title
+
+---------------------------------------------------------------
+-- ⚙️ PENGATURAN POSISI BAHU & GERAKAN TANGAN
+---------------------------------------------------------------
+local SHOULDER_HEIGHT = 0,2 -- Tinggi engsel bahu (-0.2 normal, -0.5 lebih turun)
+local BASE_PITCH      = 0  -- Posisi tekuk lengan (makin negatif = makin turun dekat perut)
+local SWING_RANGE     = 30   -- Jarak ayunan maju-mundur
+local YAW_ANGLE       = 115  -- Arah putar telapak tangan (115 = menghadap kanan)
+local INWARD_TILT     = -38   -- 👈 UBAH INI: (20 - 50) Memaksa lengan miring MASUK MENYILANG KE PERUT
+---------------------------------------------------------------
+-- ============================================================
+-- 2. FUNGSI UTAMA ANIMASI (Tempel di luar fungsi GUI)
+-- ============================================================
+local function toggleArmLoop()
+    if renderConnection then
+        renderConnection:Disconnect()
+        renderConnection = nil
+    end
+
+    local character = LocalPlayer.Character
+    if not character then return end
+
+    local torso = character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
+    if not torso then return end
+
+    local rightShoulder = torso:FindFirstChild("Right Shoulder") or (character:FindFirstChild("RightUpperArm") and character.RightUpperArm:FindFirstChild("RightShoulder"))
+
+    if rightShoulder and not defaultRightC0 then
+        defaultRightC0 = rightShoulder.C0
+    end
+
+    if not isAnimating then
+        if rightShoulder and defaultRightC0 then
+            rightShoulder.C0 = defaultRightC0
+        end
+        return
+    end
+
+    renderConnection = RunService.RenderStepped:Connect(function()
+        local char = LocalPlayer.Character
+        if not char then return end
+
+        local t = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+        if not t then return end
+
+        local rShoulder = t:FindFirstChild("Right Shoulder") or (char:FindFirstChild("RightUpperArm") and char.RightUpperArm:FindFirstChild("RightShoulder"))
+
+        if rShoulder then
+            local time = tick() * 8
+            
+            local forwardFactor = (math.sin(time) + 1) / 2
+            local currentPitch = math.rad(BASE_PITCH) + math.rad(forwardFactor * SWING_RANGE)
+            local staticShoulderPos = Vector3.new(0.8, SHOULDER_HEIGHT, 0)
+            
+            local tiltInward = CFrame.Angles(0, 0, math.rad(INWARD_TILT))
+            local armOrient  = CFrame.Angles(currentPitch, math.rad(YAW_ANGLE), 0)
+            
+            rShoulder.C0 = CFrame.new(staticShoulderPos) * tiltInward * armOrient
+        end
+    end)
+end
+
+-- Menangani otomatis saat karakter mati / Respawn
+LocalPlayer.CharacterAdded:Connect(function()
+    defaultRightC0 = nil
+    task.wait(1)
+    if isAnimating then
+        toggleArmLoop()
+    end
+end)
+
+-- 1. Buat Tombol Fisik Baru
+local animBtn = Instance.new("TextButton")
+animBtn.Size = UDim2.new(0, 200, 0, 40) -- Ukuran tombol
+animBtn.Position = UDim2.new(0, 10, 0, 10) -- Posisi tombol di dalam window
+animBtn.Text = "Aktifkan Animasi Tangan"
+animBtn.Parent = MainFrame -- 👈 Ganti dengan nama Frame/Window kamu
+
+-- 2. Hubungkan Tombol ke Logika Animasi
+animBtn.MouseButton1Click:Connect(function()
+    isAnimating = not isAnimating
+    
+    if isAnimating then
+        animBtn.Text = "Matikan Animasi Tangan"
+    else
+        animBtn.Text = "Aktifkan Animasi Tangan"
+    end
+    
+    toggleArmLoop()
+end)
 
 local MinCorner = Instance.new("UICorner")
 MinCorner.CornerRadius = UDim.new(0, 4)
