@@ -496,26 +496,17 @@ MiniIcon.MouseButton1Click:Connect(function()
 	MainFrame.Visible = true
 end)
 
--- 6. LOGIKA FISIKA KARAKTER & TELEPORTATION
+-- 6. LOGIKA FISIKA KARAKTER, TELEPORTATION & PERSISTENT SPECTATE
 local isSticking = false
 local isPatrolling = false
 local isSpectating = false
 
 local renderConnection = nil
 local patrolConnection = nil
+local spectateConnection = nil
 
-LocalPlayer.CharacterAdded:Connect(function(newChar)
+LocalPlayer.CharacterAdded:Connect(function()
 	table.clear(originalCanCollide)
-	if isSpectating then
-		task.wait(0.5)
-		local targetPlayer = findTargetPlayer(NameBox.Text)
-		if targetPlayer and targetPlayer.Character then
-			local targetHumanoid = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
-			if targetHumanoid then
-				Camera.CameraSubject = targetHumanoid
-			end
-		end
-	end
 end)
 
 HeadModeBtn.MouseButton1Click:Connect(function()
@@ -720,31 +711,46 @@ function togglePatrol()
 	end
 end
 
--- LOGIKA SPECTATE TARGET
+-- LOGIKA SPECTATE TARGET (AUTO LOCK ON RESPAWN)
 local function toggleSpectate()
 	isSpectating = not isSpectating
 	
 	if isSpectating then
 		local targetPlayer = findTargetPlayer(NameBox.Text)
-		if not targetPlayer or not targetPlayer.Character then
+		if not targetPlayer then
 			StatusLabel.Text = "Target tidak ditemukan!"
 			StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
 			isSpectating = false
 			return
 		end
 		
-		local targetHumanoid = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
-		if targetHumanoid then
-			Camera.CameraSubject = targetHumanoid
-			SpectateBtn.Text = "Spectate Target: ON"
-			SpectateBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
-			StatusLabel.Text = "Mengawasi: " .. targetPlayer.DisplayName
-			StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-		end
+		SpectateBtn.Text = "Spectate Target: ON"
+		SpectateBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
+		StatusLabel.Text = "Mengawasi: " .. targetPlayer.DisplayName
+		StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+
+		-- Menjaga kamera selalu mengunci Humanoid target meskipun respawn/mati
+		spectateConnection = RunService.RenderStepped:Connect(function()
+			if not isSpectating then return end
+			
+			local currentTarget = findTargetPlayer(NameBox.Text)
+			if currentTarget and currentTarget.Character then
+				local targetHumanoid = currentTarget.Character:FindFirstChildOfClass("Humanoid")
+				if targetHumanoid and Camera.CameraSubject ~= targetHumanoid then
+					Camera.CameraSubject = targetHumanoid
+				end
+			end
+		end)
 	else
+		if spectateConnection then
+			spectateConnection:Disconnect()
+			spectateConnection = nil
+		end
+		
 		if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
 			Camera.CameraSubject = LocalPlayer.Character.Humanoid
 		end
+		
 		SpectateBtn.Text = "Spectate Target: OFF"
 		SpectateBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
 		StatusLabel.Text = "Status: Tidak Aktif"
@@ -766,11 +772,9 @@ local function teleportToTarget()
 	local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
 
 	if targetPart and myHRP then
-		-- Matikan fitur penempelan/patroli agar posisi tidak tertembak kembali
 		if isSticking then toggleSticky() end
 		if isPatrolling then togglePatrol() end
 
-		-- Teleportasi posisi
 		myHRP.CFrame = targetPart.CFrame * CFrame.new(0, 0, -3)
 		StatusLabel.Text = "Teleport ke: " .. targetPlayer.DisplayName
 		StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
