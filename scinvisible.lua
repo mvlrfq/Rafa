@@ -244,7 +244,7 @@ task.spawn(function()
 
     -- Penanganan Respawn Karakter
     player.CharacterAdded:Connect(function()
-        task.wait(0.5)
+        task.wait(1)
         hiddenPastebinButton = findAndHidePastebinUI()
 
         isInvisibleActive = false
