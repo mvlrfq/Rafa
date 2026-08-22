@@ -79,7 +79,7 @@ frameCorner.Parent = frame
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -60, 0, 28)
 title.Position = UDim2.new(0, 10, 0, 0)
-title.Text = "🎵 Audio Player (JSON Saved)"
+title.Text = "🎵 Mrq Audio Player"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.BackgroundTransparency = 1
 title.Font = Enum.Font.SourceSansBold
@@ -118,7 +118,7 @@ closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeBtn
 
 local miniIcon = Instance.new("TextButton")
-miniIcon.Size = UDim2.new(0, 45, 0, 45)
+miniIcon.Size = UDim2.new(0, 30, 0, 30)
 miniIcon.Position = UDim2.new(0.05, 0, 0.2, 0)
 miniIcon.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
 miniIcon.Text = "🎵"
