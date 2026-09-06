@@ -4,7 +4,7 @@ local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/
 -- Ukuran UI Sedang
 local Window = Fluent:CreateWindow({
     Title = "Gunung Teleport",
-    SubTitle = "v4.3 Stable Toggle",
+    SubTitle = "v4.4 Fixed Toggle Visibility",
     TabWidth = 120,
     Size = UDim2.fromOffset(460, 320),
     Acrylic = false,
@@ -224,7 +224,7 @@ Tabs.Custom:AddToggle("AutoCustomToggle", {
             while autoCustomActive do
                 if #customWaypoints == 0 then break end
                 for _, wp in ipairs(customWaypoints) do
-                    if not autoCustomActive then break end
+                    if not autoCustomActive me break end
                     teleportTo(wp.CF)
                     task.wait(loopDelay)
                 end
@@ -300,12 +300,12 @@ Tabs.Settings:AddButton({
     end
 })
 
--- Jika disilang -> Hapuskan toggle & reset
+-- Jika tombol SILANG diklik -> Hapus Toggle & Reset
 Window.OnClose:Connect(function()
     cleanupAll()
 end)
 
--- ================= DRAGGABLE TOGGLE BUTTON =================
+-- ================= DRAGGABLE TOGGLE BUTTON (DIRECT FLUENT REF) =================
 local function createDraggableButton()
     local parentGui = pcall(function() return game:GetService("CoreGui") end) and game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
 
@@ -334,16 +334,16 @@ local function createDraggableButton()
     corner.CornerRadius = UDim.new(0, 18)
     corner.Parent = btn
 
-    -- Buka/Tutup UI dengan aman tanpa error function
+    -- Mengontrol langsung ScreenGui bawaan Fluent UI lewat objek internal
     local isShown = true
     btn.MouseButton1Click:Connect(function()
         isShown = not isShown
         
-        -- Cari UI Frame milik Fluent dan ubah visibility-nya secara manual
-        for _, obj in pairs(parentGui:GetChildren()) do
-            if obj:IsA("ScreenGui") and obj ~= sg and (obj.Name:find("Fluent") or obj:FindFirstChild("Main") or obj:FindFirstChild("Frame")) then
-                obj.Enabled = isShown
-            end
+        -- Akses langsung pointer GUI bawaan Fluent UI
+        if Window and Window.Root then
+            Window.Root.Enabled = isShown
+        elseif Fluent and Fluent.GUI then
+            Fluent.GUI.Enabled = isShown
         end
     end)
 end
