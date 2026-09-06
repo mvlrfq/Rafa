@@ -1,17 +1,20 @@
--- Load Library Fluent UI (Stabil di HP/Executor)
+-- Load Library Fluent UI
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
+-- Ukuran UI dibuat kecil & ringkas agar cocok untuk layar HP
 local Window = Fluent:CreateWindow({
-    Title = "Gunung Explorer Script",
-    SubTitle = "by Assistant",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 340),
+    Title = "Gunung Teleport",
+    SubTitle = "v2.0 Compact",
+    TabWidth = 120,
+    Size = UDim2.fromOffset(360, 260), -- Ukuran minimalis
     Acrylic = false,
-    Theme = "Dark"
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.RightControl
 })
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 
 -- File Simpanan berdasarkan ID Map
@@ -32,31 +35,16 @@ local function teleportTo(cframe)
     end
 end
 
--- Function: Save & Load
-local function saveWaypointsToFile()
-    local dataToSave = {}
-    for _, wp in ipairs(customWaypoints) do
-        local pos = wp.CF.Position
-        table.insert(dataToSave, {
-            Name = wp.Name,
-            Pos = {pos.X, pos.Y, pos.Z}
-        })
-    end
-    pcall(function()
-        writefile(fileName, HttpService:JSONEncode(dataToSave))
-    end)
-end
-
 -- Tabs UI
 local Tabs = {
-    Main = Window:AddTab({ Title = "Main Teleport", Icon = "map-pin" }),
-    Custom = Window:AddTab({ Title = "Custom Waypoint", Icon = "bookmark" }),
-    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
+    Main = Window:AddTab({ Title = "Main", Icon = "map-pin" }),
+    Custom = Window:AddTab({ Title = "Waypoint", Icon = "bookmark" }),
+    Settings = Window:AddTab({ Title = "Setting", Icon = "settings" })
 }
 
 -- Dropdown Reference
 local WaypointDropdown = Tabs.Custom:AddDropdown("WpDropdown", {
-    Title = "Pilih Waypoint dari List",
+    Title = "Pilih Waypoint List",
     Values = {},
     Multi = false,
     Default = "",
@@ -71,6 +59,21 @@ local function refreshDropdown()
         table.insert(names, wp.Name)
     end
     WaypointDropdown:SetValues(names)
+end
+
+-- Save & Load Functions
+local function saveWaypointsToFile()
+    local dataToSave = {}
+    for _, wp in ipairs(customWaypoints) do
+        local pos = wp.CF.Position
+        table.insert(dataToSave, {
+            Name = wp.Name,
+            Pos = {pos.X, pos.Y, pos.Z}
+        })
+    end
+    pcall(function()
+        writefile(fileName, HttpService:JSONEncode(dataToSave))
+    end)
 end
 
 local function loadWaypointsFromFile()
@@ -113,12 +116,12 @@ Tabs.Main:AddButton({
     Title = "Scan Checkpoints Map",
     Callback = function()
         scanCheckpoints()
-        Fluent:Notify({ Title = "Scan Selesai", Content = "Ditemukan " .. #checkpoints .. " Checkpoint.", Duration = 3 })
+        Fluent:Notify({ Title = "Scan Selesai", Content = "Ditemukan " .. #checkpoints .. " Checkpoint.", Duration = 2 })
     end
 })
 
 Tabs.Main:AddToggle("AutoCPToggle", {
-    Title = "Auto Teleport CP (Looping)",
+    Title = "Auto Teleport CP (Loop)",
     Default = false,
     Callback = function(Value)
         autoCPActive = Value
@@ -138,9 +141,9 @@ Tabs.Main:AddToggle("AutoCPToggle", {
 })
 
 Tabs.Main:AddInput("CPInput", {
-    Title = "Teleport Manual ke CP Nomor",
+    Title = "Teleport Manual CP",
     Default = "",
-    Placeholder = "Contoh: 1, 2, 3...",
+    Placeholder = "Ketik Angka (Contoh: 1)",
     Numeric = true,
     Finished = true,
     Callback = function(Text)
@@ -155,7 +158,7 @@ Tabs.Main:AddInput("CPInput", {
 
 -- ================= TAB 2: CUSTOM WAYPOINT =================
 Tabs.Custom:AddButton({
-    Title = "Tambah Waypoint di Posisi Saat Ini",
+    Title = "Tambah Waypoint Posisi Ini",
     Callback = function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             local currentCF = LocalPlayer.Character.HumanoidRootPart.CFrame
@@ -163,13 +166,13 @@ Tabs.Custom:AddButton({
             table.insert(customWaypoints, {Name = wpName, CF = currentCF})
             saveWaypointsToFile()
             refreshDropdown()
-            Fluent:Notify({ Title = "Berhasil", Content = wpName .. " tersimpan!", Duration = 3 })
+            Fluent:Notify({ Title = "Tersimpan", Content = wpName .. " ditambahkan!", Duration = 2 })
         end
     end
 })
 
 Tabs.Custom:AddButton({
-    Title = "Teleport ke Waypoint Terpilih",
+    Title = "Teleport Ke Waypoint Terpilih",
     Callback = function()
         if selectedWaypointName == "" then return end
         for _, wp in ipairs(customWaypoints) do
@@ -182,7 +185,7 @@ Tabs.Custom:AddButton({
 })
 
 Tabs.Custom:AddToggle("AutoCustomToggle", {
-    Title = "Auto Teleport Custom (Looping)",
+    Title = "Auto Custom Teleport (Loop)",
     Default = false,
     Callback = function(Value)
         autoCustomActive = Value
@@ -208,13 +211,13 @@ Tabs.Custom:AddButton({
             delfile(fileName)
         end
         refreshDropdown()
-        Fluent:Notify({ Title = "Reset", Content = "Semua waypoint telah dihapus.", Duration = 3 })
+        Fluent:Notify({ Title = "Reset", Content = "Semua waypoint terhapus.", Duration = 2 })
     end
 })
 
 -- ================= TAB 3: SETTINGS =================
 Tabs.Settings:AddSlider("DelaySlider", {
-    Title = "Jeda Teleport (Detik)",
+    Title = "Delay Teleport (Detik)",
     Default = 2,
     Min = 1,
     Max = 10,
@@ -225,55 +228,56 @@ Tabs.Settings:AddSlider("DelaySlider", {
 })
 
 Tabs.Settings:AddButton({
-    Title = "Close Script & Normalkan",
+    Title = "Close Script & Reset",
     Callback = function()
         autoCPActive = false
         autoCustomActive = false
         checkpoints = {}
         customWaypoints = {}
         
-        local sg = LocalPlayer:FindFirstChild("PlayerGui"):FindFirstChild("DraggableToggle_Gunung")
+        local sg = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("ToggleGui_Gunung_Fix")
         if sg then sg:Destroy() end
         
         Fluent:Destroy()
     end
 })
 
--- ================= DRAGGABLE TOGGLE BUTTON =================
+-- ================= DRAGGABLE TOGGLE BUTTON (FIXED SHOW/HIDE) =================
 local function createDraggableButton()
     local pGui = LocalPlayer:WaitForChild("PlayerGui")
-    if pGui:FindFirstChild("DraggableToggle_Gunung") then
-        pGui.DraggableToggle_Gunung:Destroy()
+    if pGui:FindFirstChild("ToggleGui_Gunung_Fix") then
+        pGui.ToggleGui_Gunung_Fix:Destroy()
     end
 
     local sg = Instance.new("ScreenGui")
-    sg.Name = "DraggableToggle_Gunung"
+    sg.Name = "ToggleGui_Gunung_Fix"
     sg.Parent = pGui
+    sg.ResetOnSpawn = false
 
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 50, 0, 50)
-    btn.Position = UDim2.new(0.1, 0, 0.2, 0)
-    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    btn.Size = UDim2.new(0, 45, 0, 45)
+    btn.Position = UDim2.new(0.05, 0, 0.15, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     btn.Text = "MENU"
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.SourceSansBold
-    btn.TextSize = 13
+    btn.TextSize = 12
     btn.Active = true
-    btn.Draggable = true -- BISA DIGESER DI HP
+    btn.Draggable = true
     btn.Parent = sg
 
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 25)
+    corner.CornerRadius = UDim.new(0, 23)
     corner.Parent = btn
 
+    -- Event Klik Toggle untuk Membuka/Menutup Window
     btn.MouseButton1Click:Connect(function()
-        local mainGui = pGui:FindFirstChild("FluentUI")
-        if mainGui then
-            mainGui.Enabled = not mainGui.Enabled
-        end
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.RightControl, false, game)
+        task.wait(0.05)
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.RightControl, false, game)
     end)
 end
 
--- Init
+-- AUTO RUN / INITIALIZE
 loadWaypointsFromFile()
 createDraggableButton()
