@@ -1,5 +1,7 @@
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
 -- ================= STATE & VARIABLES =================
@@ -37,6 +39,82 @@ local MainGui = Instance.new("ScreenGui")
 MainGui.Name = "GunungTeleportCustomUI"
 MainGui.ResetOnSpawn = false
 MainGui.Parent = parentGui
+
+-- System Notifikasi Custom
+local NotificationHolder = Instance.new("Frame")
+NotificationHolder.Name = "NotificationHolder"
+NotificationHolder.Size = UDim2.new(0, 220, 1, -20)
+NotificationHolder.Position = UDim2.new(1, -230, 0, 10)
+NotificationHolder.BackgroundTransparency = 1
+NotificationHolder.Parent = MainGui
+
+local NotifListLayout = Instance.new("UIListLayout")
+NotifListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+NotifListLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+NotifListLayout.Padding = UDim.new(0, 8)
+NotifListLayout.Parent = NotificationHolder
+
+local function showNotification(title, text, duration)
+    duration = duration or 3
+
+    local NotifFrame = Instance.new("Frame")
+    NotifFrame.Size = UDim2.new(1, 0, 0, 60)
+    NotifFrame.Position = UDim2.new(1.2, 0, 0, 0)
+    NotifFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    NotifFrame.BorderSizePixel = 0
+    NotifFrame.Parent = NotificationHolder
+
+    local NotifCorner = Instance.new("UICorner")
+    NotifCorner.CornerRadius = UDim.new(0, 6)
+    NotifCorner.Parent = NotifFrame
+
+    local AccentBar = Instance.new("Frame")
+    AccentBar.Size = UDim2.new(0, 4, 1, 0)
+    AccentBar.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    AccentBar.BorderSizePixel = 0
+    AccentBar.Parent = NotifFrame
+
+    local AccentCorner = Instance.new("UICorner")
+    AccentCorner.CornerRadius = UDim.new(0, 2)
+    AccentCorner.Parent = AccentBar
+
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Size = UDim2.new(1, -15, 0, 20)
+    TitleLabel.Position = UDim2.new(0, 10, 0, 6)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Text = title
+    TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TitleLabel.TextSize = 12
+    TitleLabel.Font = Enum.Font.SourceSansBold
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.Parent = NotifFrame
+
+    local TextLabel = Instance.new("TextLabel")
+    TextLabel.Size = UDim2.new(1, -15, 0, 30)
+    TextLabel.Position = UDim2.new(0, 10, 0, 24)
+    TextLabel.BackgroundTransparency = 1
+    TextLabel.Text = text
+    TextLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    TextLabel.TextSize = 11
+    TextLabel.Font = Enum.Font.SourceSans
+    TextLabel.TextWrapped = true
+    TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TextLabel.Parent = NotifFrame
+
+    NotifFrame:TweenPosition(UDim2.new(0, 0, 0, 0), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
+
+    task.delay(duration, function()
+        if NotifFrame and NotifFrame.Parent then
+            local tweenOut = TweenService:Create(NotifFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                Position = UDim2.new(1.2, 0, 0, 0)
+            })
+            tweenOut:Play()
+            tweenOut.Completed:Connect(function()
+                NotifFrame:Destroy()
+            end)
+        end
+    end)
+end
 
 -- Frame Utama
 local MainFrame = Instance.new("Frame")
@@ -203,7 +281,6 @@ local PageMain = createTab("Main CP")
 local PageCustom = createTab("Waypoint")
 local PageSettings = createTab("Setting")
 
--- Show Default Tab
 tabs[1].Page.Visible = true
 tabs[1].Btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 tabs[1].Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -293,26 +370,132 @@ local function createInput(parent, placeholder, callback)
     end)
 end
 
--- ================= LOGIKA SCRIPT (ORIGINAL) =================
-local customWaypointContainer = Instance.new("Frame")
-customWaypointContainer.Size = UDim2.new(1, 0, 0, 0)
-customWaypointContainer.BackgroundTransparency = 1
-customWaypointContainer.Parent = PageCustom
+-- HELPER BARU: SLIDER & TEXTBOX INTEGRATION
+local function createSliderWithInput(parent, text, min, max, default, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -6, 0, 45)
+    frame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    frame.Parent = parent
 
-local customListLayout = Instance.new("UIListLayout")
-customListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-customListLayout.Padding = UDim.new(0, 4)
-customListLayout.Parent = customWaypointContainer
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 4)
+    corner.Parent = frame
 
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -60, 0, 20)
+    label.Position = UDim2.new(0, 8, 0, 2)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.SourceSans
+    label.TextSize = 13
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+
+    -- Textbox Input
+    local valBox = Instance.new("TextBox")
+    valBox.Size = UDim2.new(0, 45, 0, 18)
+    valBox.Position = UDim2.new(1, -50, 0, 3)
+    valBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    valBox.Text = tostring(default)
+    valBox.TextColor3 = Color3.fromRGB(0, 170, 255)
+    valBox.Font = Enum.Font.SourceSansBold
+    valBox.TextSize = 12
+    valBox.Parent = frame
+
+    local boxCorner = Instance.new("UICorner")
+    boxCorner.CornerRadius = UDim.new(0, 3)
+    boxCorner.Parent = valBox
+
+    -- Slider Track Background
+    local sliderBg = Instance.new("Frame")
+    sliderBg.Size = UDim2.new(1, -16, 0, 6)
+    sliderBg.Position = UDim2.new(0, 8, 0, 28)
+    sliderBg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    sliderBg.Parent = frame
+
+    local trackCorner = Instance.new("UICorner")
+    trackCorner.CornerRadius = UDim.new(0, 3)
+    trackCorner.Parent = sliderBg
+
+    -- Slider Fill Bar
+    local sliderFill = Instance.new("Frame")
+    local initPercent = math.clamp((default - min) / (max - min), 0, 1)
+    sliderFill.Size = UDim2.new(initPercent, 0, 1, 0)
+    sliderFill.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    sliderFill.Parent = sliderBg
+
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(0, 3)
+    fillCorner.Parent = sliderFill
+
+    local isDragging = false
+
+    local function updateValue(val, triggerCallback)
+        local clamped = math.clamp(math.floor(val + 0.5), min, max)
+        local percent = (clamped - min) / (max - min)
+        
+        sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+        valBox.Text = tostring(clamped)
+        
+        if triggerCallback then
+            callback(clamped)
+        end
+    end
+
+    -- Event Dragging Slider
+    sliderBg.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isDragging = true
+            local mousePos = UserInputService:GetMouseLocation().X
+            local relPos = mousePos - sliderBg.AbsolutePosition.X
+            local percent = math.clamp(relPos / sliderBg.AbsoluteSize.X, 0, 1)
+            local val = min + (percent * (max - min))
+            updateValue(val, true)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isDragging = false
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local mousePos = UserInputService:GetMouseLocation().X
+            local relPos = mousePos - sliderBg.AbsolutePosition.X
+            local percent = math.clamp(relPos / sliderBg.AbsoluteSize.X, 0, 1)
+            local val = min + (percent * (max - min))
+            updateValue(val, true)
+        end
+    end)
+
+    -- Event Manual Text Input
+    valBox.FocusLost:Connect(function(enterPressed)
+        local num = tonumber(valBox.Text)
+        if num then
+            updateValue(num, true)
+        else
+            valBox.Text = tostring(loopDelay)
+        end
+    end)
+end
+
+-- ================= LOGIKA SCRIPT =================
 local function renderCustomWaypointsUI()
-    for _, child in pairs(customWaypointContainer:GetChildren()) do
-        if child:IsA("TextButton") then child:Destroy() end
+    for _, child in pairs(PageCustom:GetChildren()) do
+        if child:IsA("TextButton") and child.Name == "WaypointListButton" then 
+            child:Destroy() 
+        end
     end
 
     for _, wp in ipairs(customWaypoints) do
-        createButton(customWaypointContainer, "Teleport ke " .. wp.Name, function()
+        local btn = createButton(PageCustom, "Teleport ke " .. wp.Name, function()
             teleportTo(wp.CF)
+            showNotification("Teleport", "Berhasil teleport ke " .. wp.Name, 2)
         end)
+        btn.Name = "WaypointListButton"
     end
 end
 
@@ -342,7 +525,10 @@ local function loadWaypointsFromFile()
                 })
             end
             renderCustomWaypointsUI()
+            showNotification("Config Loaded", "Berhasil memuat " .. #customWaypoints .. " waypoint.", 3)
         end)
+    else
+        showNotification("Config Error", "File simpanan tidak ditemukan.", 3)
     end
 end
 
@@ -361,6 +547,7 @@ local function scanCheckpoints()
         local numB = tonumber(b.Name:match("%d+")) or 0
         return numA < numB
     end)
+    showNotification("Scan Selesai", "Ditemukan " .. #checkpoints .. " checkpoint di map.", 3)
 end
 
 -- --- TAB 1: MAIN CP ---
@@ -370,6 +557,7 @@ end)
 
 createToggle(PageMain, "Auto Teleport CP (Looping)", false, function(Value)
     autoCPActive = Value
+    showNotification("Auto CP", "Auto Teleport CP: " .. (Value and "ON" or "OFF"), 2)
     task.spawn(function()
         while autoCPActive do
             if #checkpoints == 0 then scanCheckpoints() end
@@ -390,6 +578,9 @@ createInput(PageMain, "Ketik Angka CP (Misal: 1, 2)", function(Text)
         local cp = checkpoints[cpIndex]
         local targetCF = cp:IsA("Model") and cp:GetPivot() or cp.CFrame
         teleportTo(targetCF)
+        showNotification("Teleport CP", "Teleport ke Checkpoint " .. cpIndex, 2)
+    else
+        showNotification("Error", "Checkpoint tidak ditemukan!", 2)
     end
 end)
 
@@ -401,6 +592,7 @@ createButton(PageCustom, "Tambah Waypoint di Posisi Ini", function()
         table.insert(customWaypoints, {Name = wpName, CF = currentCF})
         saveWaypointsToFile()
         renderCustomWaypointsUI()
+        showNotification("Waypoint Saved", wpName .. " berhasil ditambahkan!", 2)
     end
 end)
 
@@ -410,6 +602,7 @@ end)
 
 createToggle(PageCustom, "Auto Custom Teleport (Looping)", false, function(Value)
     autoCustomActive = Value
+    showNotification("Auto Waypoint", "Auto Teleport Waypoint: " .. (Value and "ON" or "OFF"), 2)
     task.spawn(function()
         while autoCustomActive do
             if #customWaypoints == 0 then break end
@@ -429,14 +622,13 @@ createButton(PageCustom, "Hapus Semua Waypoint & Saved File", function()
     if delfile and isfile and isfile(fileName) then
         delfile(fileName)
     end
+    showNotification("Waypoint Cleared", "Semua waypoint telah dihapus.", 3)
 end)
 
 -- --- TAB 3: SETTING ---
-createInput(PageSettings, "Set Delay Teleport (Detik)", function(Text)
-    local num = tonumber(Text)
-    if num and num >= 1 then
-        loopDelay = num
-    end
+createSliderWithInput(PageSettings, "Delay Teleport (Detik)", 1, 10, loopDelay, function(Value)
+    loopDelay = Value
+    showNotification("Setting Updated", "Delay teleport diubah ke " .. Value .. " detik", 1.5)
 end)
 
 local function cleanupAll()
@@ -454,6 +646,7 @@ end)
 -- ================= TOMBOL EVENT HANDLER =================
 MinimizeBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
+    showNotification("UI Minimize", "Tekan tombol MENU untuk membuka kembali.", 2)
 end)
 
 MenuToggleBtn.MouseButton1Click:Connect(function()
@@ -463,3 +656,6 @@ end)
 CloseBtn.MouseButton1Click:Connect(function()
     cleanupAll()
 end)
+
+-- Initial Load Notification
+showNotification("Script Loaded", "Gunung Teleport Custom UI Siap Digunakan!", 4)
