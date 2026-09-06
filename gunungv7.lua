@@ -11,8 +11,8 @@ local autoCPActive = false
 local autoCustomActive = false
 local loopDelay = 2
 
-local folderName = "GunungTeleportConfigs"
-local fileName = folderName .. "/Gunung_Waypoints_" .. tostring(game.PlaceId) .. ".json"
+local folderName = "raff-Wp"
+local fileName = folderName .. "/Waypoints_" .. tostring(game.PlaceId) .. ".json"
 
 local function ensureFolderExists()
     if makefolder and isfolder then
@@ -243,7 +243,7 @@ local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, -90, 1, 0)
 TitleLabel.Position = UDim2.new(0, 12, 0, 0)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "Gunung Teleport (Custom UI)"
+TitleLabel.Text = "raff-Wp"
 TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleLabel.TextSize = 14
 TitleLabel.Font = Enum.Font.SourceSansBold
@@ -314,7 +314,7 @@ MenuToggleBtn.Name = "MenuToggleBtn"
 MenuToggleBtn.Size = UDim2.new(0, 40, 0, 40)
 MenuToggleBtn.Position = UDim2.new(0.05, 0, 0.15, 0)
 MenuToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-MenuToggleBtn.Text = "MENU"
+MenuToggleBtn.Text = "🚩"
 MenuToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 MenuToggleBtn.Font = Enum.Font.SourceSansBold
 MenuToggleBtn.TextSize = 11
@@ -612,7 +612,7 @@ local WaypointListTitle = Instance.new("TextLabel")
 WaypointListTitle.Size = UDim2.new(1, -6, 0, 18)
 WaypointListTitle.Position = UDim2.new(0, 2, 0, 125)
 WaypointListTitle.BackgroundTransparency = 1
-WaypointListTitle.Text = "Daftar Waypoint"
+WaypointListTitle.Text = "Daftar Waypoint yg disimpan"
 WaypointListTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
 WaypointListTitle.Font = Enum.Font.SourceSansBold
 WaypointListTitle.TextSize = 12
@@ -852,10 +852,10 @@ CloseBtn.MouseButton1Click:Connect(function()
             cleanupAll()
         end
     )
-end)
+end)p
 
 -- Initial Load Notification & Auto Load Config Map Active
-showNotification("Script Loaded", "Gunung Teleport Custom UI Siap Digunakan!", 3)
+showNotification("Script Loaded", "raff-Wp Siap Digunakan!", 3)
 task.spawn(function()
     loadWaypointsFromFile(true)
 end)
