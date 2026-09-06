@@ -655,7 +655,7 @@ local function renderCustomWaypointsUI()
     end
 
     for _, wp in ipairs(customWaypoints) do
-        local btn = createButton(WaypointScrollList, "Teleport ke " .. wp.Name, function()
+        createButton(WaypointScrollList, "Teleport ke " .. wp.Name, function()
             teleportTo(wp.CF)
             showNotification("Teleport", "Berhasil teleport ke " .. wp.Name, 2)
         end)
@@ -677,9 +677,9 @@ end
 local function loadWaypointsFromFile(isAutoLoad)
     ensureFolderExists()
     if readfile and isfile and isfile(fileName) then
-        pcall(function()
+        local success, err = pcall(function()
             local rawData = readfile(fileName)
-            local decoded = HttpService:JSONEncode and HttpService:JSONDecode(rawData)
+            local decoded = HttpService:JSONDecode(rawData)
             customWaypoints = {}
             for _, item in ipairs(decoded) do
                 table.insert(customWaypoints, {
@@ -688,13 +688,19 @@ local function loadWaypointsFromFile(isAutoLoad)
                 })
             end
             renderCustomWaypointsUI()
-            
+        end)
+
+        if success then
             if isAutoLoad then
-                showNotification("Auto Load", "Config map berhasil dimuat otomatis! (" .. #customWaypoints .. " waypoint)", 3)
+                showNotification("Auto Load", "Config map dimuat otomatis (" .. #customWaypoints .. " waypoint)", 3)
             else
                 showNotification("Config Loaded", "Berhasil memuat " .. #customWaypoints .. " waypoint.", 3)
             end
-        end)
+        else
+            if not isAutoLoad then
+                showNotification("Config Error", "Gagal membaca isi file config.", 3)
+            end
+        end
     else
         if not isAutoLoad then
             showNotification("Config Error", "File simpanan tidak ditemukan.", 3)
@@ -777,7 +783,7 @@ createToggle(WaypointTopControls, "Auto Custom Teleport (Looping)", false, funct
         while autoCustomActive do
             if #customWaypoints == 0 then break end
             for _, wp in ipairs(customWaypoints) do
-                if not autoCustomActive then break end
+                if not autoCustomActive me then break end
                 teleportTo(wp.CF)
                 task.wait(loopDelay)
             end
@@ -850,4 +856,6 @@ end)
 
 -- Initial Load Notification & Auto Load Config Map Active
 showNotification("Script Loaded", "Gunung Teleport Custom UI Siap Digunakan!", 3)
-loadWaypointsFromFile(true) -- Jalankan auto load pas dibuka
+task.spawn(function()
+    loadWaypointsFromFile(true)
+end)
