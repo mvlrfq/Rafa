@@ -11,7 +11,7 @@ local autoCPActive = false
 local autoCustomActive = false
 local loopDelay = 2
 
-local folderName = "raff-Wp"
+local folderName = "raff-wp"
 local fileName = folderName .. "/Waypoints_" .. tostring(game.PlaceId) .. ".json"
 
 local function ensureFolderExists()
@@ -243,7 +243,7 @@ local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, -90, 1, 0)
 TitleLabel.Position = UDim2.new(0, 12, 0, 0)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "raff-Wp"
+TitleLabel.Text = "raff-wp"
 TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleLabel.TextSize = 14
 TitleLabel.Font = Enum.Font.SourceSansBold
@@ -612,7 +612,7 @@ local WaypointListTitle = Instance.new("TextLabel")
 WaypointListTitle.Size = UDim2.new(1, -6, 0, 18)
 WaypointListTitle.Position = UDim2.new(0, 2, 0, 125)
 WaypointListTitle.BackgroundTransparency = 1
-WaypointListTitle.Text = "Daftar Waypoint yg disimpan"
+WaypointListTitle.Text = "Daftar Wp tersimpan"
 WaypointListTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
 WaypointListTitle.Font = Enum.Font.SourceSansBold
 WaypointListTitle.TextSize = 12
@@ -793,7 +793,7 @@ createToggle(WaypointTopControls, "Auto Custom Teleport (Looping)", false, funct
 end)
 
 -- Tombol hapus dengan Konfirmasi Pop-up
-createButton(WaypointTopControls, "Hapus Semua Waypoint & Saved File", function()
+createButton(WaypointTopControls, "Hapus Semua Waypoint", function()
     showConfirmation(
         "Hapus Config Waypoint?", 
         "Apakah kamu yakin ingin menghapus seluruh waypoint & file penyimpanan?", 
@@ -852,10 +852,10 @@ CloseBtn.MouseButton1Click:Connect(function()
             cleanupAll()
         end
     )
-end)p
+end)
 
 -- Initial Load Notification & Auto Load Config Map Active
-showNotification("Script Loaded", "raff-Wp Siap Digunakan!", 3)
+showNotification("Script Loaded", "raff-wp Siap Digunakan!", 3)
 task.spawn(function()
     loadWaypointsFromFile(true)
 end)
