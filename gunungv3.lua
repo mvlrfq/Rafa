@@ -3,8 +3,8 @@ local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/
 
 -- Ukuran UI dibuat sedang (Pas untuk HP, tidak sempit dan tidak menutupi seluruh layar)
 local Window = Fluent:CreateWindow({
-    Title = "Gunung Teleport",
-    SubTitle = "v3.5 Medium UI",
+    Title = "raff-Sc",
+    SubTitle = "v3.5",
     TabWidth = 120,
     Size = UDim2.fromOffset(460, 320), -- Ukuran sedang agar tulisan rapi & tidak menimpa
     Acrylic = false,
@@ -18,7 +18,7 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 
 -- LOGIKA PENGELOLAAN FOLDER KHUSUS
-local folderName = "GunungTeleportConfigs"
+local folderName = "raff-Sc"
 local fileName = folderName .. "/Gunung_Waypoints_" .. tostring(game.PlaceId) .. ".json"
 
 -- Buat folder tersendiri jika belum ada di penyimpanan executor
@@ -72,7 +72,7 @@ end
 local function renderWaypointListUI()
     for i, wp in ipairs(customWaypoints) do
         Tabs.Custom:AddButton({
-            Title = "Teleport ke " .. wp.Name,
+            Title = "Tp ke" .. wp.Name,
             Callback = function()
                 teleportTo(wp.CF)
                 Fluent:Notify({ Title = "Teleport", Content = "Pindah ke " .. wp.Name, Duration = 1.5 })
@@ -135,7 +135,7 @@ end
 Tabs.Main:AddSection("Fitur Deteksi & Auto Checkpoint")
 
 Tabs.Main:AddButton({
-    Title = "Scan Checkpoints Map",
+    Title = "Scan Cp",
     Callback = function()
         scanCheckpoints()
         Fluent:Notify({ Title = "Scan Selesai", Content = "Ditemukan " .. #checkpoints .. " Checkpoint.", Duration = 2 })
@@ -143,7 +143,7 @@ Tabs.Main:AddButton({
 })
 
 Tabs.Main:AddToggle("AutoCPToggle", {
-    Title = "Auto Teleport CP (Looping)",
+    Title = "Auto Tp CP (Looping)",
     Default = false,
     Callback = function(Value)
         autoCPActive = Value
@@ -163,9 +163,9 @@ Tabs.Main:AddToggle("AutoCPToggle", {
 })
 
 Tabs.Main:AddInput("CPInput", {
-    Title = "Teleport Manual CP",
+    Title = "Tp Manual CP",
     Default = "",
-    Placeholder = "Ketik Angka CP (Misal: 1, 2)",
+    Placeholder = "Ketik CP",
     Numeric = true,
     Finished = true,
     Callback = function(Text)
@@ -193,7 +193,7 @@ Tabs.Custom:AddButton({
             
             -- Buat tombol teleport baru secara langsung
             Tabs.Custom:AddButton({
-                Title = "Teleport ke " .. wpName,
+                Title = "Tp ke " .. wpName,
                 Callback = function()
                     teleportTo(currentCF)
                 end
@@ -212,7 +212,7 @@ Tabs.Custom:AddButton({
 })
 
 Tabs.Custom:AddToggle("AutoCustomToggle", {
-    Title = "Auto Custom Teleport (Looping)",
+    Title = "Auto Custom Tp (Looping)",
     Default = false,
     Callback = function(Value)
         autoCustomActive = Value
@@ -231,7 +231,7 @@ Tabs.Custom:AddToggle("AutoCustomToggle", {
 })
 
 Tabs.Custom:AddButton({
-    Title = "Hapus Semua Waypoint & Saved File",
+    Title = "Hapus Semua Waypoint",
     Callback = function()
         Window:Dialog({
             Title = "Konfirmasi Hapus",
@@ -262,7 +262,7 @@ Tabs.Custom:AddSection("Daftar List Waypoint Tersimpan")
 Tabs.Settings:AddSection("Pengaturan UI & Delay")
 
 Tabs.Settings:AddSlider("DelaySlider", {
-    Title = "Jeda Teleport / Delay (Detik)",
+    Title = "Jeda Tp (Detik)",
     Default = 2,
     Min = 1,
     Max = 10,
@@ -272,20 +272,29 @@ Tabs.Settings:AddSlider("DelaySlider", {
     end
 })
 
+-- Fungsi Pembersihan Status & Toggle
+local function cleanupAll()
+    autoCPActive = false
+    autoCustomActive = false
+    checkpoints = {}
+    customWaypoints = {}
+    
+    local sg = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("ToggleGui_Gunung_Fix")
+    if sg then sg:Destroy() end
+end
+
 Tabs.Settings:AddButton({
-    Title = "Close Script & Reset Status",
+    Title = "Close Script",
     Callback = function()
-        autoCPActive = false
-        autoCustomActive = false
-        checkpoints = {}
-        customWaypoints = {}
-        
-        local sg = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("ToggleGui_Gunung_Fix")
-        if sg then sg:Destroy() end
-        
+        cleanupAll()
         Fluent:Destroy()
     end
 })
+
+-- Handle saat tombol SILANG (Close) bawaan Window diklik
+Window.OnClose:Connect(function()
+    cleanupAll()
+end)
 
 -- ================= DRAGGABLE TOGGLE BUTTON =================
 local function createDraggableButton()
