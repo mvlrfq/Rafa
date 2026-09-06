@@ -1,14 +1,13 @@
--- Load Library Fluent UI
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+-- Load Library Orion UI (Mirror Repositori Aktif)
+local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/jensonhirst/Orion/main/source'))()
 
--- Ukuran UI Sedang
-local Window = Fluent:CreateWindow({
-    Title = "Gunung Teleport",
-    SubTitle = "v4.5 Executable Fix",
-    TabWidth = 120,
-    Size = UDim2.fromOffset(460, 320),
-    Acrylic = false,
-    Theme = "Dark"
+-- Membuat Window Utama
+local Window = OrionLib:MakeWindow({
+    Name = "Gunung Teleport - v5.1",
+    HidePremium = true,
+    SaveConfig = false,
+    ConfigFolder = "GunungTeleportConfigs",
+    IntroEnabled = false
 })
 
 local HttpService = game:GetService("HttpService")
@@ -30,7 +29,6 @@ end
 -- Variable States
 local checkpoints = {}
 local customWaypoints = {}
-local waypointButtons = {}
 local autoCPActive = false
 local autoCustomActive = false
 local loopDelay = 2
@@ -43,11 +41,9 @@ local function teleportTo(cframe)
 end
 
 -- Tabs UI
-local Tabs = {
-    Main = Window:AddTab({ Title = "Main CP", Icon = "map-pin" }),
-    Custom = Window:AddTab({ Title = "Waypoint", Icon = "bookmark" }),
-    Settings = Window:AddTab({ Title = "Setting", Icon = "settings" })
-}
+local TabMain = Window:MakeTab({ Name = "Main CP", Icon = "rbxassetid://4483345998" })
+local TabCustom = Window:MakeTab({ Name = "Waypoint", Icon = "rbxassetid://4483345998" })
+local TabSettings = Window:MakeTab({ Name = "Setting", Icon = "rbxassetid://4483345998" })
 
 -- Save Functions
 local function saveWaypointsToFile()
@@ -65,31 +61,21 @@ local function saveWaypointsToFile()
     end)
 end
 
--- Fungsi Menghapus Seluruh Tombol List Waypoint di UI
-local function clearWaypointUIList()
-    for _, btnElement in ipairs(waypointButtons) do
-        pcall(function()
-            if btnElement and btnElement.Destroy then
-                btnElement:Destroy()
-            end
-        end)
-    end
-    waypointButtons = {}
-end
-
--- Fungsi Menambahkan & Menampilkan List Waypoint ke UI
+-- Render List Waypoint
 local function renderWaypointListUI()
-    clearWaypointUIList()
-    
     for i, wp in ipairs(customWaypoints) do
-        local newBtn = Tabs.Custom:AddButton({
-            Title = "Teleport ke " .. wp.Name,
+        TabCustom:AddButton({
+            Name = "Teleport ke " .. wp.Name,
             Callback = function()
                 teleportTo(wp.CF)
-                Fluent:Notify({ Title = "Teleport", Content = "Pindah ke " .. wp.Name, Duration = 1.5 })
+                OrionLib:MakeNotification({
+                    Name = "Teleport",
+                    Content = "Pindah ke " .. wp.Name,
+                    Image = "rbxassetid://4483345998",
+                    Time = 1.5
+                })
             end
         })
-        table.insert(waypointButtons, newBtn)
     end
 end
 
@@ -110,16 +96,27 @@ local function loadWaypointsFromFile()
 
         if success and #customWaypoints > 0 then
             renderWaypointListUI()
-            Fluent:Notify({ 
-                Title = "Config Dimuat", 
-                Content = "Berhasil memuat " .. #customWaypoints .. " waypoint tersimpan.", 
-                Duration = 3 
+            OrionLib:MakeNotification({
+                Name = "Config Dimuat",
+                Content = "Berhasil memuat " .. #customWaypoints .. " waypoint tersimpan.",
+                Image = "rbxassetid://4483345998",
+                Time = 3
             })
         else
-            Fluent:Notify({ Title = "Peringatan", Content = "File config kosong atau tidak valid.", Duration = 2 })
+            OrionLib:MakeNotification({
+                Name = "Peringatan",
+                Content = "File config kosong atau tidak valid.",
+                Image = "rbxassetid://4483345998",
+                Time = 2
+            })
         end
     else
-        Fluent:Notify({ Title = "Gagal Load", Content = "Belum ada config tersimpan di map ini.", Duration = 2.5 })
+        OrionLib:MakeNotification({
+            Name = "Gagal Load",
+            Content = "Belum ada config tersimpan di map ini.",
+            Image = "rbxassetid://4483345998",
+            Time = 2.5
+        })
     end
 end
 
@@ -142,18 +139,23 @@ local function scanCheckpoints()
 end
 
 -- ================= TAB 1: MAIN TELEPORT =================
-Tabs.Main:AddSection("Fitur Deteksi & Auto Checkpoint")
+TabMain:AddSection({ Name = "Fitur Deteksi & Auto Checkpoint" })
 
-Tabs.Main:AddButton({
-    Title = "Scan Checkpoints Map",
+TabMain:AddButton({
+    Name = "Scan Checkpoints Map",
     Callback = function()
         scanCheckpoints()
-        Fluent:Notify({ Title = "Scan Selesai", Content = "Ditemukan " .. #checkpoints .. " Checkpoint.", Duration = 2 })
+        OrionLib:MakeNotification({
+            Name = "Scan Selesai",
+            Content = "Ditemukan " .. #checkpoints .. " Checkpoint.",
+            Image = "rbxassetid://4483345998",
+            Time = 2
+        })
     end
 })
 
-Tabs.Main:AddToggle("AutoCPToggle", {
-    Title = "Auto Teleport CP (Looping)",
+TabMain:AddToggle({
+    Name = "Auto Teleport CP (Looping)",
     Default = false,
     Callback = function(Value)
         autoCPActive = Value
@@ -172,12 +174,10 @@ Tabs.Main:AddToggle("AutoCPToggle", {
     end
 })
 
-Tabs.Main:AddInput("CPInput", {
-    Title = "Teleport Manual CP",
+TabMain:AddTextbox({
+    Name = "Teleport Manual CP",
     Default = "",
-    Placeholder = "Ketik Angka CP (Misal: 1, 2)",
-    Numeric = true,
-    Finished = true,
+    TextDisappear = true,
     Callback = function(Text)
         local cpIndex = tonumber(Text)
         if cpIndex and checkpoints[cpIndex] then
@@ -189,10 +189,10 @@ Tabs.Main:AddInput("CPInput", {
 })
 
 -- ================= TAB 2: CUSTOM WAYPOINT =================
-Tabs.Custom:AddSection("Pengaturan Custom Waypoint")
+TabCustom:AddSection({ Name = "Pengaturan Custom Waypoint" })
 
-Tabs.Custom:AddButton({
-    Title = "Tambah Waypoint di Posisi Ini",
+TabCustom:AddButton({
+    Name = "Tambah Waypoint di Posisi Ini",
     Callback = function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             local currentCF = LocalPlayer.Character.HumanoidRootPart.CFrame
@@ -201,22 +201,38 @@ Tabs.Custom:AddButton({
             table.insert(customWaypoints, {Name = wpName, CF = currentCF})
             saveWaypointsToFile()
             
-            renderWaypointListUI()
+            TabCustom:AddButton({
+                Name = "Teleport ke " .. wpName,
+                Callback = function()
+                    teleportTo(currentCF)
+                    OrionLib:MakeNotification({
+                        Name = "Teleport",
+                        Content = "Pindah ke " .. wpName,
+                        Image = "rbxassetid://4483345998",
+                        Time = 1.5
+                    })
+                end
+            })
 
-            Fluent:Notify({ Title = "Tersimpan", Content = wpName .. " berhasil ditambahkan!", Duration = 2 })
+            OrionLib:MakeNotification({
+                Name = "Tersimpan",
+                Content = wpName .. " berhasil ditambahkan!",
+                Image = "rbxassetid://4483345998",
+                Time = 2
+            })
         end
     end
 })
 
-Tabs.Custom:AddButton({
-    Title = "Load Config Waypoint Tersimpan",
+TabCustom:AddButton({
+    Name = "Load Config Waypoint Tersimpan",
     Callback = function()
         loadWaypointsFromFile()
     end
 })
 
-Tabs.Custom:AddToggle("AutoCustomToggle", {
-    Title = "Auto Custom Teleport (Looping)",
+TabCustom:AddToggle({
+    Name = "Auto Custom Teleport (Looping)",
     Default = false,
     Callback = function(Value)
         autoCustomActive = Value
@@ -234,57 +250,45 @@ Tabs.Custom:AddToggle("AutoCustomToggle", {
     end
 })
 
-Tabs.Custom:AddButton({
-    Title = "Hapus Semua Waypoint & Saved File",
+TabCustom:AddButton({
+    Name = "Hapus Semua Waypoint & Saved File",
     Callback = function()
-        Window:Dialog({
-            Title = "Konfirmasi Hapus",
-            Content = "Apakah kamu yakin ingin menghapus semua file simpanan waypoint untuk map ini?",
-            Buttons = {
-                {
-                    Title = "Ya, Hapus",
-                    Callback = function()
-                        customWaypoints = {}
-                        clearWaypointUIList()
-                        
-                        if delfile and isfile and isfile(fileName) then
-                            delfile(fileName)
-                        end
-                        Fluent:Notify({ Title = "Reset", Content = "Semua waypoint berhasil dihapus dari file & UI.", Duration = 2 })
-                    end
-                },
-                {
-                    Title = "Batal",
-                    Callback = function() end
-                }
-            }
+        customWaypoints = {}
+        if delfile and isfile and isfile(fileName) then
+            delfile(fileName)
+        end
+        OrionLib:MakeNotification({
+            Name = "Reset",
+            Content = "Semua waypoint berhasil dihapus dari file.",
+            Image = "rbxassetid://4483345998",
+            Time = 2
         })
     end
 })
 
-Tabs.Custom:AddSection("Daftar List Waypoint Tersimpan")
+TabCustom:AddSection({ Name = "Daftar List Waypoint Tersimpan" })
 
 -- ================= TAB 3: SETTINGS =================
-Tabs.Settings:AddSection("Pengaturan UI & Delay")
+TabSettings:AddSection({ Name = "Pengaturan UI & Delay" })
 
-Tabs.Settings:AddSlider("DelaySlider", {
-    Title = "Jeda Teleport / Delay (Detik)",
-    Default = 2,
+TabSettings:AddSlider({
+    Name = "Jeda Teleport / Delay (Detik)",
     Min = 1,
     Max = 10,
-    Rounding = 0,
+    Default = 2,
+    Color = Color3.fromRGB(255, 255, 255),
+    Increment = 1,
+    ValueName = "Detik",
     Callback = function(Value)
         loopDelay = Value
     end
 })
 
--- Fungsi Pembersihan saat Script ditutup total
 local function cleanupAll()
     autoCPActive = false
     autoCustomActive = false
     checkpoints = {}
     customWaypoints = {}
-    clearWaypointUIList()
     
     local parentGui = pcall(function() return game:GetService("CoreGui") end) and game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
     if parentGui:FindFirstChild("ToggleGui_Gunung_Fix") then
@@ -292,18 +296,13 @@ local function cleanupAll()
     end
 end
 
-Tabs.Settings:AddButton({
-    Title = "Close Script & Reset Status",
+TabSettings:AddButton({
+    Name = "Close Script & Reset Status",
     Callback = function()
         cleanupAll()
-        Fluent:Destroy()
+        OrionLib:Destroy()
     end
 })
-
--- Jika tombol SILANG diklik -> Hapus Toggle & Reset
-Window.OnClose:Connect(function()
-    cleanupAll()
-end)
 
 -- ================= DRAGGABLE TOGGLE BUTTON =================
 local function createDraggableButton()
@@ -319,30 +318,31 @@ local function createDraggableButton()
     sg.ResetOnSpawn = false
 
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 35, 0, 35)
+    btn.Size = UDim2.new(0, 40, 0, 40)
     btn.Position = UDim2.new(0.05, 0, 0.15, 0)
-    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     btn.Text = "MENU"
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.SourceSansBold
-    btn.TextSize = 10
+    btn.TextSize = 11
     btn.Active = true
     btn.Draggable = true
     btn.Parent = sg
 
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 18)
+    corner.CornerRadius = UDim.new(0, 20)
     corner.Parent = btn
 
     local isShown = true
     btn.MouseButton1Click:Connect(function()
         isShown = not isShown
-        if Window and Window.Root then
-            Window.Root.Enabled = isShown
-        elseif Fluent and Fluent.GUI then
-            Fluent.GUI.Enabled = isShown
+        for _, gui in pairs(parentGui:GetChildren()) do
+            if gui:IsA("ScreenGui") and gui.Name == "Orion" then
+                gui.Enabled = isShown
+            end
         end
     end)
 end
 
 createDraggableButton()
+OrionLib:Init()
