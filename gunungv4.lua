@@ -4,7 +4,7 @@ local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/
 -- Ukuran UI Sedang
 local Window = Fluent:CreateWindow({
     Title = "Gunung Teleport",
-    SubTitle = "v4.4 Fixed Toggle Visibility",
+    SubTitle = "v4.5 Executable Fix",
     TabWidth = 120,
     Size = UDim2.fromOffset(460, 320),
     Acrylic = false,
@@ -224,7 +224,7 @@ Tabs.Custom:AddToggle("AutoCustomToggle", {
             while autoCustomActive do
                 if #customWaypoints == 0 then break end
                 for _, wp in ipairs(customWaypoints) do
-                    if not autoCustomActive me break end
+                    if not autoCustomActive then break end
                     teleportTo(wp.CF)
                     task.wait(loopDelay)
                 end
@@ -305,7 +305,7 @@ Window.OnClose:Connect(function()
     cleanupAll()
 end)
 
--- ================= DRAGGABLE TOGGLE BUTTON (DIRECT FLUENT REF) =================
+-- ================= DRAGGABLE TOGGLE BUTTON =================
 local function createDraggableButton()
     local parentGui = pcall(function() return game:GetService("CoreGui") end) and game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
 
@@ -334,12 +334,9 @@ local function createDraggableButton()
     corner.CornerRadius = UDim.new(0, 18)
     corner.Parent = btn
 
-    -- Mengontrol langsung ScreenGui bawaan Fluent UI lewat objek internal
     local isShown = true
     btn.MouseButton1Click:Connect(function()
         isShown = not isShown
-        
-        -- Akses langsung pointer GUI bawaan Fluent UI
         if Window and Window.Root then
             Window.Root.Enabled = isShown
         elseif Fluent and Fluent.GUI then
