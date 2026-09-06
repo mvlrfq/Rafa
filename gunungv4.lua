@@ -1,10 +1,10 @@
 -- Load Library Fluent UI
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
--- Ukuran UI Sedang & Pas di Layar HP
+-- Ukuran UI Sedang
 local Window = Fluent:CreateWindow({
     Title = "Gunung Teleport",
-    SubTitle = "v4.0 Fixed List & Toggle",
+    SubTitle = "v4.2 Fixed Minimize & Close",
     TabWidth = 120,
     Size = UDim2.fromOffset(460, 320),
     Acrylic = false,
@@ -14,7 +14,6 @@ local Window = Fluent:CreateWindow({
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 
 -- Pengelolaan Folder Khusus
@@ -32,7 +31,7 @@ end
 -- Variable States
 local checkpoints = {}
 local customWaypoints = {}
-local waypointButtons = {} -- Menyimpan referensi tombol UI agar bisa dihapus
+local waypointButtons = {}
 local autoCPActive = false
 local autoCustomActive = false
 local loopDelay = 2
@@ -81,7 +80,7 @@ end
 
 -- Fungsi Menambahkan & Menampilkan List Waypoint ke UI
 local function renderWaypointListUI()
-    clearWaypointUIList() -- Bersihkan UI list lama terlebih dahulu
+    clearWaypointUIList()
     
     for i, wp in ipairs(customWaypoints) do
         local newBtn = Tabs.Custom:AddButton({
@@ -203,7 +202,6 @@ Tabs.Custom:AddButton({
             table.insert(customWaypoints, {Name = wpName, CF = currentCF})
             saveWaypointsToFile()
             
-            -- Render ulang agar list langsung ter-update secara rapi
             renderWaypointListUI()
 
             Fluent:Notify({ Title = "Tersimpan", Content = wpName .. " berhasil ditambahkan!", Duration = 2 })
@@ -248,7 +246,7 @@ Tabs.Custom:AddButton({
                     Title = "Ya, Hapus",
                     Callback = function()
                         customWaypoints = {}
-                        clearWaypointUIList() -- HAPUS SEMUA LIST TOMBOL DI UI HASIL RENDER
+                        clearWaypointUIList()
                         
                         if delfile and isfile and isfile(fileName) then
                             delfile(fileName)
@@ -281,7 +279,7 @@ Tabs.Settings:AddSlider("DelaySlider", {
     end
 })
 
--- Fungsi Pembersihan Status & Toggle
+-- Fungsi Pembersihan saat Script ditutup total
 local function cleanupAll()
     autoCPActive = false
     autoCustomActive = false
@@ -289,8 +287,10 @@ local function cleanupAll()
     customWaypoints = {}
     clearWaypointUIList()
     
-    local sg = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("ToggleGui_Gunung_Fix")
-    if sg then sg:Destroy() end
+    local parentGui = pcall(function() return game:GetService("CoreGui") end) and game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
+    if parentGui:FindFirstChild("ToggleGui_Gunung_Fix") then
+        parentGui.ToggleGui_Gunung_Fix:Destroy()
+    end
 end
 
 Tabs.Settings:AddButton({
@@ -301,21 +301,22 @@ Tabs.Settings:AddButton({
     end
 })
 
--- Event saat tombol SILANG (Close) diklik
+-- Hanya aktif saat tombol SILANG diklik -> Hapus Toggle & Reset
 Window.OnClose:Connect(function()
     cleanupAll()
 end)
 
 -- ================= DRAGGABLE TOGGLE BUTTON =================
 local function createDraggableButton()
-    local pGui = LocalPlayer:WaitForChild("PlayerGui")
-    if pGui:FindFirstChild("ToggleGui_Gunung_Fix") then
-        pGui.ToggleGui_Gunung_Fix:Destroy()
+    local parentGui = pcall(function() return game:GetService("CoreGui") end) and game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
+
+    if parentGui:FindFirstChild("ToggleGui_Gunung_Fix") then
+        parentGui.ToggleGui_Gunung_Fix:Destroy()
     end
 
     local sg = Instance.new("ScreenGui")
     sg.Name = "ToggleGui_Gunung_Fix"
-    sg.Parent = pGui
+    sg.Parent = parentGui
     sg.ResetOnSpawn = false
 
     local btn = Instance.new("TextButton")
@@ -335,11 +336,8 @@ local function createDraggableButton()
     corner.Parent = btn
 
     btn.MouseButton1Click:Connect(function()
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.RightControl, false, game)
-        task.wait(0.05)
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.RightControl, false, game)
+        Window:Minimize()
     end)
 end
 
--- Pastikan tombol toggle tetap ada
 createDraggableButton()
