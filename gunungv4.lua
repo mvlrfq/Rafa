@@ -4,12 +4,11 @@ local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/
 -- Ukuran UI Sedang
 local Window = Fluent:CreateWindow({
     Title = "Gunung Teleport",
-    SubTitle = "v4.2 Fixed Minimize & Close",
+    SubTitle = "v4.3 Stable Toggle",
     TabWidth = 120,
     Size = UDim2.fromOffset(460, 320),
     Acrylic = false,
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.RightControl
+    Theme = "Dark"
 })
 
 local HttpService = game:GetService("HttpService")
@@ -301,7 +300,7 @@ Tabs.Settings:AddButton({
     end
 })
 
--- Hanya aktif saat tombol SILANG diklik -> Hapus Toggle & Reset
+-- Jika disilang -> Hapuskan toggle & reset
 Window.OnClose:Connect(function()
     cleanupAll()
 end)
@@ -335,8 +334,17 @@ local function createDraggableButton()
     corner.CornerRadius = UDim.new(0, 18)
     corner.Parent = btn
 
+    -- Buka/Tutup UI dengan aman tanpa error function
+    local isShown = true
     btn.MouseButton1Click:Connect(function()
-        Window:Minimize()
+        isShown = not isShown
+        
+        -- Cari UI Frame milik Fluent dan ubah visibility-nya secara manual
+        for _, obj in pairs(parentGui:GetChildren()) do
+            if obj:IsA("ScreenGui") and obj ~= sg and (obj.Name:find("Fluent") or obj:FindFirstChild("Main") or obj:FindFirstChild("Frame")) then
+                obj.Enabled = isShown
+            end
+        end
     end)
 end
 
