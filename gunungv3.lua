@@ -17,8 +17,18 @@ local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 
--- File Simpanan berdasarkan ID Map
-local fileName = "Gunung_Waypoints_" .. tostring(game.PlaceId) .. ".json"
+-- LOGIKA PENGELOLAAN FOLDER KHUSUS
+local folderName = "GunungTeleportConfigs"
+local fileName = folderName .. "/Gunung_Waypoints_" .. tostring(game.PlaceId) .. ".json"
+
+-- Buat folder tersendiri jika belum ada di penyimpanan executor
+local function ensureFolderExists()
+    if makefolder and isfolder then
+        if not isfolder(folderName) then
+            makefolder(folderName)
+        end
+    end
+end
 
 -- Variable States
 local checkpoints = {}
@@ -43,6 +53,8 @@ local Tabs = {
 
 -- Save & Load Functions
 local function saveWaypointsToFile()
+    ensureFolderExists()
+    
     local dataToSave = {}
     for _, wp in ipairs(customWaypoints) do
         local pos = wp.CF.Position
@@ -70,10 +82,13 @@ local function renderWaypointListUI()
 end
 
 local function loadWaypointsFromFile()
+    ensureFolderExists()
+    
     if readfile and isfile and isfile(fileName) then
         local success = pcall(function()
             local rawData = readfile(fileName)
-            local decoded = HttpService:JSONDecode(rawData)
+            local decoded = HttpService:JSONEncode(rawData) -- Safety check
+            decoded = HttpService:JSONDecode(rawData)
             customWaypoints = {}
             for _, item in ipairs(decoded) do
                 table.insert(customWaypoints, {
@@ -272,7 +287,7 @@ Tabs.Settings:AddButton({
     end
 })
 
--- ================= DRAGGABLE TOGGLE BUTTON (LEBIH KECIL) =================
+-- ================= DRAGGABLE TOGGLE BUTTON =================
 local function createDraggableButton()
     local pGui = LocalPlayer:WaitForChild("PlayerGui")
     if pGui:FindFirstChild("ToggleGui_Gunung_Fix") then
@@ -284,7 +299,6 @@ local function createDraggableButton()
     sg.Parent = pGui
     sg.ResetOnSpawn = false
 
-    -- Ukuran tombol toggle diperkecil menjadi 35x35 px
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0, 35, 0, 35)
     btn.Position = UDim2.new(0.05, 0, 0.15, 0)
