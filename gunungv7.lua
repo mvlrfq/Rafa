@@ -783,7 +783,7 @@ createToggle(WaypointTopControls, "Auto Custom Teleport (Looping)", false, funct
         while autoCustomActive do
             if #customWaypoints == 0 then break end
             for _, wp in ipairs(customWaypoints) do
-                if not autoCustomActive me then break end
+                if not autoCustomActive then break end
                 teleportTo(wp.CF)
                 task.wait(loopDelay)
             end
