@@ -54,7 +54,6 @@ NotifListLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
 NotifListLayout.Padding = UDim.new(0, 8)
 NotifListLayout.Parent = NotificationHolder
 
--- Variabel penampung agar notifikasi tidak menumpuk
 local currentNotifFrame = nil
 
 local function showNotification(title, text, duration)
@@ -128,6 +127,89 @@ local function showNotification(title, text, duration)
                 end
             end)
         end
+    end)
+end
+
+-- ================= POPUP DIALOG KONFIRMASI =================
+local function showConfirmation(title, message, onConfirm)
+    local Overlay = Instance.new("TextButton")
+    Overlay.Name = "ConfirmOverlay"
+    Overlay.Size = UDim2.new(1, 0, 1, 0)
+    Overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Overlay.BackgroundTransparency = 0.5
+    Overlay.Text = ""
+    Overlay.AutoButtonColor = false
+    Overlay.Parent = MainGui
+
+    local DialogBox = Instance.new("Frame")
+    DialogBox.Size = UDim2.new(0, 280, 0, 140)
+    DialogBox.Position = UDim2.new(0.5, -140, 0.5, -70)
+    DialogBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    DialogBox.BorderSizePixel = 0
+    DialogBox.Parent = Overlay
+
+    local DialogCorner = Instance.new("UICorner")
+    DialogCorner.CornerRadius = UDim.new(0, 8)
+    DialogCorner.Parent = DialogBox
+
+    local DialogTitle = Instance.new("TextLabel")
+    DialogTitle.Size = UDim2.new(1, -20, 0, 30)
+    DialogTitle.Position = UDim2.new(0, 10, 0, 8)
+    DialogTitle.BackgroundTransparency = 1
+    DialogTitle.Text = title
+    DialogTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    DialogTitle.Font = Enum.Font.SourceSansBold
+    DialogTitle.TextSize = 14
+    DialogTitle.TextXAlignment = Enum.TextXAlignment.Center
+    DialogTitle.Parent = DialogBox
+
+    local DialogMsg = Instance.new("TextLabel")
+    DialogMsg.Size = UDim2.new(1, -20, 0, 40)
+    DialogMsg.Position = UDim2.new(0, 10, 0, 40)
+    DialogMsg.BackgroundTransparency = 1
+    DialogMsg.Text = message
+    DialogMsg.TextColor3 = Color3.fromRGB(200, 200, 200)
+    DialogMsg.Font = Enum.Font.SourceSans
+    DialogMsg.TextSize = 12
+    DialogMsg.TextWrapped = true
+    DialogMsg.TextXAlignment = Enum.TextXAlignment.Center
+    DialogMsg.Parent = DialogBox
+
+    local YesBtn = Instance.new("TextButton")
+    YesBtn.Size = UDim2.new(0, 110, 0, 30)
+    YesBtn.Position = UDim2.new(0, 20, 1, -40)
+    YesBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+    YesBtn.Text = "Ya, Lanjutkan"
+    YesBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    YesBtn.Font = Enum.Font.SourceSansBold
+    YesBtn.TextSize = 12
+    YesBtn.Parent = DialogBox
+
+    local YesCorner = Instance.new("UICorner")
+    YesCorner.CornerRadius = UDim.new(0, 4)
+    YesCorner.Parent = YesBtn
+
+    local NoBtn = Instance.new("TextButton")
+    NoBtn.Size = UDim2.new(0, 110, 0, 30)
+    NoBtn.Position = UDim2.new(1, -130, 1, -40)
+    NoBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    NoBtn.Text = "Batal"
+    NoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    NoBtn.Font = Enum.Font.SourceSansBold
+    NoBtn.TextSize = 12
+    NoBtn.Parent = DialogBox
+
+    local NoCorner = Instance.new("UICorner")
+    NoCorner.CornerRadius = UDim.new(0, 4)
+    NoCorner.Parent = NoBtn
+
+    YesBtn.MouseButton1Click:Connect(function()
+        Overlay:Destroy()
+        if onConfirm then onConfirm() end
+    end)
+
+    NoBtn.MouseButton1Click:Connect(function()
+        Overlay:Destroy()
     end)
 end
 
@@ -504,7 +586,6 @@ local function createSliderWithInput(parent, text, min, max, default, callback)
 end
 
 -- ================= SETUP LAYOUT WAYPOINT TAB =================
--- Container Kontrol Atas (ScrollingFrame)
 local WaypointTopControls = Instance.new("ScrollingFrame")
 WaypointTopControls.Size = UDim2.new(1, 0, 0, 115)
 WaypointTopControls.BackgroundTransparency = 1
@@ -520,7 +601,6 @@ TopListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     WaypointTopControls.CanvasSize = UDim2.new(0, 0, 0, TopListLayout.AbsoluteContentSize.Y + 5)
 end)
 
--- Garis Pemisah (Divider)
 local WaypointDivider = Instance.new("Frame")
 WaypointDivider.Size = UDim2.new(1, -6, 0, 1)
 WaypointDivider.Position = UDim2.new(0, 0, 0, 120)
@@ -528,7 +608,6 @@ WaypointDivider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 WaypointDivider.BorderSizePixel = 0
 WaypointDivider.Parent = PageCustom
 
--- Judul List Waypoint
 local WaypointListTitle = Instance.new("TextLabel")
 WaypointListTitle.Size = UDim2.new(1, -6, 0, 18)
 WaypointListTitle.Position = UDim2.new(0, 2, 0, 125)
@@ -540,7 +619,6 @@ WaypointListTitle.TextSize = 12
 WaypointListTitle.TextXAlignment = Enum.TextXAlignment.Left
 WaypointListTitle.Parent = PageCustom
 
--- Kotak Terpisah Khusus List Waypoint
 local WaypointListBox = Instance.new("Frame")
 WaypointListBox.Size = UDim2.new(1, -6, 1, -148)
 WaypointListBox.Position = UDim2.new(0, 0, 0, 145)
@@ -669,7 +747,7 @@ createInput(PageMain, "Ketik Angka CP (Misal: 1, 2)", function(Text)
     end
 end)
 
--- --- TAB 2: WAYPOINT (Memakai Frame Kontrol Atas Scrollable) ---
+-- --- TAB 2: WAYPOINT ---
 createButton(WaypointTopControls, "Tambah Waypoint di Posisi Ini", function()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local currentCF = LocalPlayer.Character.HumanoidRootPart.CFrame
@@ -701,13 +779,20 @@ createToggle(WaypointTopControls, "Auto Custom Teleport (Looping)", false, funct
     end)
 end)
 
+-- Tombol hapus dengan Konfirmasi Pop-up
 createButton(WaypointTopControls, "Hapus Semua Waypoint & Saved File", function()
-    customWaypoints = {}
-    renderCustomWaypointsUI()
-    if delfile and isfile and isfile(fileName) then
-        delfile(fileName)
-    end
-    showNotification("Waypoint Cleared", "Semua waypoint telah dihapus.", 3)
+    showConfirmation(
+        "Hapus Config Waypoint?", 
+        "Apakah kamu yakin ingin menghapus seluruh waypoint & file penyimpanan?", 
+        function()
+            customWaypoints = {}
+            renderCustomWaypointsUI()
+            if delfile and isfile and isfile(fileName) then
+                delfile(fileName)
+            end
+            showNotification("Waypoint Cleared", "Semua waypoint dan file telah dihapus.", 3)
+        end
+    )
 end)
 
 -- --- TAB 3: SETTING ---
@@ -724,8 +809,15 @@ local function cleanupAll()
     MainGui:Destroy()
 end
 
+-- Tombol close script dengan Konfirmasi Pop-up
 createButton(PageSettings, "Close Script & Reset Status", function()
-    cleanupAll()
+    showConfirmation(
+        "Tutup Script?", 
+        "Script akan dihentikan dan UI akan dihapus. Lanjutkan?", 
+        function()
+            cleanupAll()
+        end
+    )
 end)
 
 -- ================= TOMBOL EVENT HANDLER =================
@@ -738,8 +830,15 @@ MenuToggleBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
 end)
 
+-- Tombol "X" header dengan Konfirmasi Pop-up
 CloseBtn.MouseButton1Click:Connect(function()
-    cleanupAll()
+    showConfirmation(
+        "Keluar dari Script?", 
+        "Apakah kamu yakin ingin menutup dan mematikan UI script?", 
+        function()
+            cleanupAll()
+        end
+    )
 end)
 
 -- Initial Load Notification
