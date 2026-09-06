@@ -1,20 +1,14 @@
--- Load Library Orion UI (Mirror Repositori Aktif)
-local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/jensonhirst/Orion/main/source'))()
-
--- Membuat Window Utama
-local Window = OrionLib:MakeWindow({
-    Name = "Gunung Teleport - v5.1",
-    HidePremium = true,
-    SaveConfig = false,
-    ConfigFolder = "GunungTeleportConfigs",
-    IntroEnabled = false
-})
-
-local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
--- Pengelolaan Folder Khusus
+-- ================= STATE & VARIABLES =================
+local checkpoints = {}
+local customWaypoints = {}
+local autoCPActive = false
+local autoCustomActive = false
+local loopDelay = 2
+
 local folderName = "GunungTeleportConfigs"
 local fileName = folderName .. "/Gunung_Waypoints_" .. tostring(game.PlaceId) .. ".json"
 
@@ -26,63 +20,318 @@ local function ensureFolderExists()
     end
 end
 
--- Variable States
-local checkpoints = {}
-local customWaypoints = {}
-local autoCPActive = false
-local autoCustomActive = false
-local loopDelay = 2
-
--- Function: Teleport
 local function teleportTo(cframe)
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         LocalPlayer.Character.HumanoidRootPart.CFrame = cframe + Vector3.new(0, 3, 0)
     end
 end
 
--- Tabs UI
-local TabMain = Window:MakeTab({ Name = "Main CP", Icon = "rbxassetid://4483345998" })
-local TabCustom = Window:MakeTab({ Name = "Waypoint", Icon = "rbxassetid://4483345998" })
-local TabSettings = Window:MakeTab({ Name = "Setting", Icon = "rbxassetid://4483345998" })
+-- Cleanup UI Lama jika ada
+local parentGui = pcall(function() return game:GetService("CoreGui") end) and game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
+if parentGui:FindFirstChild("GunungTeleportCustomUI") then
+    parentGui.GunungTeleportCustomUI:Destroy()
+end
 
--- Save Functions
+-- ================= MAIN SCREEN GUI =================
+local MainGui = Instance.new("ScreenGui")
+MainGui.Name = "GunungTeleportCustomUI"
+MainGui.ResetOnSpawn = false
+MainGui.Parent = parentGui
+
+-- Frame Utama
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 460, 0, 320)
+MainFrame.Position = UDim2.new(0.5, -230, 0.5, -160)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = MainGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 8)
+MainCorner.Parent = MainFrame
+
+-- Top Bar (Header)
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1, 0, 0, 35)
+TopBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+TopBar.BorderSizePixel = 0
+TopBar.Parent = MainFrame
+
+local TopCorner = Instance.new("UICorner")
+TopCorner.CornerRadius = UDim.new(0, 8)
+TopCorner.Parent = TopBar
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, -90, 1, 0)
+TitleLabel.Position = UDim2.new(0, 12, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "Gunung Teleport (Custom UI)"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextSize = 14
+TitleLabel.Font = Enum.Font.SourceSansBold
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.Parent = TopBar
+
+-- Tombol Minimize & Close
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Size = UDim2.new(0, 30, 0, 25)
+MinimizeBtn.Position = UDim2.new(1, -65, 0, 5)
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+MinimizeBtn.Text = "-"
+MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeBtn.TextSize = 18
+MinimizeBtn.Font = Enum.Font.SourceSansBold
+MinimizeBtn.Parent = TopBar
+
+local MinimizeCorner = Instance.new("UICorner")
+MinimizeCorner.CornerRadius = UDim.new(0, 4)
+MinimizeCorner.Parent = MinimizeBtn
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 25)
+CloseBtn.Position = UDim2.new(1, -32, 0, 5)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 14
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.Parent = TopBar
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 4)
+CloseCorner.Parent = CloseBtn
+
+-- Sidebar Tab Container
+local TabHolder = Instance.new("Frame")
+TabHolder.Size = UDim2.new(0, 110, 1, -45)
+TabHolder.Position = UDim2.new(0, 5, 0, 40)
+TabHolder.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+TabHolder.BorderSizePixel = 0
+TabHolder.Parent = MainFrame
+
+local TabCorner = Instance.new("UICorner")
+TabCorner.CornerRadius = UDim.new(0, 6)
+TabCorner.Parent = TabHolder
+
+local TabListLayout = Instance.new("UIListLayout")
+TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TabListLayout.Padding = UDim.new(0, 4)
+TabListLayout.Parent = TabHolder
+
+-- Content Container
+local ContentHolder = Instance.new("Frame")
+ContentHolder.Size = UDim2.new(1, -130, 1, -45)
+ContentHolder.Position = UDim2.new(0, 120, 0, 40)
+ContentHolder.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ContentHolder.BorderSizePixel = 0
+ContentHolder.Parent = MainFrame
+
+local ContentCorner = Instance.new("UICorner")
+ContentCorner.CornerRadius = UDim.new(0, 6)
+ContentCorner.Parent = ContentHolder
+
+-- Tombol Melayang MENU (Floating Toggle)
+local MenuToggleBtn = Instance.new("TextButton")
+MenuToggleBtn.Name = "MenuToggleBtn"
+MenuToggleBtn.Size = UDim2.new(0, 40, 0, 40)
+MenuToggleBtn.Position = UDim2.new(0.05, 0, 0.15, 0)
+MenuToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+MenuToggleBtn.Text = "MENU"
+MenuToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MenuToggleBtn.Font = Enum.Font.SourceSansBold
+MenuToggleBtn.TextSize = 11
+MenuToggleBtn.Active = true
+MenuToggleBtn.Draggable = true
+MenuToggleBtn.Parent = MainGui
+
+local MenuCorner = Instance.new("UICorner")
+MenuCorner.CornerRadius = UDim.new(0, 20)
+MenuCorner.Parent = MenuToggleBtn
+
+-- System Tab Switching
+local tabs = {}
+local function createTab(name)
+    local tabBtn = Instance.new("TextButton")
+    tabBtn.Size = UDim2.new(1, 0, 0, 30)
+    tabBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    tabBtn.Text = name
+    tabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    tabBtn.Font = Enum.Font.SourceSansBold
+    tabBtn.TextSize = 13
+    tabBtn.Parent = TabHolder
+
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 4)
+    btnCorner.Parent = tabBtn
+
+    local page = Instance.new("ScrollingFrame")
+    page.Size = UDim2.new(1, -10, 1, -10)
+    page.Position = UDim2.new(0, 5, 0, 5)
+    page.BackgroundTransparency = 1
+    page.ScrollBarThickness = 4
+    page.Visible = false
+    page.Parent = ContentHolder
+
+    local pageList = Instance.new("UIListLayout")
+    pageList.SortOrder = Enum.SortOrder.LayoutOrder
+    pageList.Padding = UDim.new(0, 6)
+    pageList.Parent = page
+
+    pageList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        page.CanvasSize = UDim2.new(0, 0, 0, pageList.AbsoluteContentSize.Y + 10)
+    end)
+
+    tabBtn.MouseButton1Click:Connect(function()
+        for _, t in pairs(tabs) do
+            t.Page.Visible = false
+            t.Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            t.Btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+        end
+        page.Visible = true
+        tabBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end)
+
+    table.insert(tabs, {Btn = tabBtn, Page = page})
+    return page
+end
+
+local PageMain = createTab("Main CP")
+local PageCustom = createTab("Waypoint")
+local PageSettings = createTab("Setting")
+
+-- Show Default Tab
+tabs[1].Page.Visible = true
+tabs[1].Btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+tabs[1].Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+-- ================= HELPER UI CREATORS =================
+local function createButton(parent, text, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -6, 0, 30)
+    btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.SourceSans
+    btn.TextSize = 13
+    btn.Parent = parent
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 4)
+    corner.Parent = btn
+
+    btn.MouseButton1Click:Connect(callback)
+    return btn
+end
+
+local function createToggle(parent, text, default, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -6, 0, 30)
+    frame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    frame.Parent = parent
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 4)
+    corner.Parent = frame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -40, 1, 0)
+    label.Position = UDim2.new(0, 8, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.SourceSans
+    label.TextSize = 13
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+
+    local toggleBtn = Instance.new("TextButton")
+    toggleBtn.Size = UDim2.new(0, 24, 0, 20)
+    toggleBtn.Position = UDim2.new(1, -28, 0, 5)
+    toggleBtn.BackgroundColor3 = default and Color3.fromRGB(0, 170, 90) or Color3.fromRGB(80, 80, 80)
+    toggleBtn.Text = default and "ON" or "OFF"
+    toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggleBtn.Font = Enum.Font.SourceSansBold
+    toggleBtn.TextSize = 10
+    toggleBtn.Parent = frame
+
+    local tCorner = Instance.new("UICorner")
+    tCorner.CornerRadius = UDim.new(0, 4)
+    tCorner.Parent = toggleBtn
+
+    local state = default
+    toggleBtn.MouseButton1Click:Connect(function()
+        state = not state
+        toggleBtn.BackgroundColor3 = state and Color3.fromRGB(0, 170, 90) or Color3.fromRGB(80, 80, 80)
+        toggleBtn.Text = state and "ON" or "OFF"
+        callback(state)
+    end)
+end
+
+local function createInput(parent, placeholder, callback)
+    local box = Instance.new("TextBox")
+    box.Size = UDim2.new(1, -6, 0, 30)
+    box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    box.PlaceholderText = placeholder
+    box.Text = ""
+    box.TextColor3 = Color3.fromRGB(255, 255, 255)
+    box.Font = Enum.Font.SourceSans
+    box.TextSize = 13
+    box.Parent = parent
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 4)
+    corner.Parent = box
+
+    box.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            callback(box.Text)
+        end
+    end)
+end
+
+-- ================= LOGIKA SCRIPT (ORIGINAL) =================
+local customWaypointContainer = Instance.new("Frame")
+customWaypointContainer.Size = UDim2.new(1, 0, 0, 0)
+customWaypointContainer.BackgroundTransparency = 1
+customWaypointContainer.Parent = PageCustom
+
+local customListLayout = Instance.new("UIListLayout")
+customListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+customListLayout.Padding = UDim.new(0, 4)
+customListLayout.Parent = customWaypointContainer
+
+local function renderCustomWaypointsUI()
+    for _, child in pairs(customWaypointContainer:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+
+    for _, wp in ipairs(customWaypoints) do
+        createButton(customWaypointContainer, "Teleport ke " .. wp.Name, function()
+            teleportTo(wp.CF)
+        end)
+    end
+end
+
 local function saveWaypointsToFile()
     ensureFolderExists()
     local dataToSave = {}
     for _, wp in ipairs(customWaypoints) do
         local pos = wp.CF.Position
-        table.insert(dataToSave, {
-            Name = wp.Name,
-            Pos = {pos.X, pos.Y, pos.Z}
-        })
+        table.insert(dataToSave, {Name = wp.Name, Pos = {pos.X, pos.Y, pos.Z}})
     end
     pcall(function()
         writefile(fileName, HttpService:JSONEncode(dataToSave))
     end)
 end
 
--- Render List Waypoint
-local function renderWaypointListUI()
-    for i, wp in ipairs(customWaypoints) do
-        TabCustom:AddButton({
-            Name = "Teleport ke " .. wp.Name,
-            Callback = function()
-                teleportTo(wp.CF)
-                OrionLib:MakeNotification({
-                    Name = "Teleport",
-                    Content = "Pindah ke " .. wp.Name,
-                    Image = "rbxassetid://4483345998",
-                    Time = 1.5
-                })
-            end
-        })
-    end
-end
-
 local function loadWaypointsFromFile()
     ensureFolderExists()
     if readfile and isfile and isfile(fileName) then
-        local success = pcall(function()
+        pcall(function()
             local rawData = readfile(fileName)
             local decoded = HttpService:JSONDecode(rawData)
             customWaypoints = {}
@@ -92,35 +341,11 @@ local function loadWaypointsFromFile()
                     CF = CFrame.new(item.Pos[1], item.Pos[2], item.Pos[3])
                 })
             end
+            renderCustomWaypointsUI()
         end)
-
-        if success and #customWaypoints > 0 then
-            renderWaypointListUI()
-            OrionLib:MakeNotification({
-                Name = "Config Dimuat",
-                Content = "Berhasil memuat " .. #customWaypoints .. " waypoint tersimpan.",
-                Image = "rbxassetid://4483345998",
-                Time = 3
-            })
-        else
-            OrionLib:MakeNotification({
-                Name = "Peringatan",
-                Content = "File config kosong atau tidak valid.",
-                Image = "rbxassetid://4483345998",
-                Time = 2
-            })
-        end
-    else
-        OrionLib:MakeNotification({
-            Name = "Gagal Load",
-            Content = "Belum ada config tersimpan di map ini.",
-            Image = "rbxassetid://4483345998",
-            Time = 2.5
-        })
     end
 end
 
--- Scan Checkpoints Map
 local function scanCheckpoints()
     checkpoints = {}
     for _, obj in pairs(workspace:GetDescendants()) do
@@ -138,211 +363,103 @@ local function scanCheckpoints()
     end)
 end
 
--- ================= TAB 1: MAIN TELEPORT =================
-TabMain:AddSection({ Name = "Fitur Deteksi & Auto Checkpoint" })
+-- --- TAB 1: MAIN CP ---
+createButton(PageMain, "Scan Checkpoints Map", function()
+    scanCheckpoints()
+end)
 
-TabMain:AddButton({
-    Name = "Scan Checkpoints Map",
-    Callback = function()
-        scanCheckpoints()
-        OrionLib:MakeNotification({
-            Name = "Scan Selesai",
-            Content = "Ditemukan " .. #checkpoints .. " Checkpoint.",
-            Image = "rbxassetid://4483345998",
-            Time = 2
-        })
-    end
-})
-
-TabMain:AddToggle({
-    Name = "Auto Teleport CP (Looping)",
-    Default = false,
-    Callback = function(Value)
-        autoCPActive = Value
-        task.spawn(function()
-            while autoCPActive do
-                if #checkpoints == 0 then scanCheckpoints() end
-                for _, cp in ipairs(checkpoints) do
-                    if not autoCPActive then break end
-                    local targetCF = cp:IsA("Model") and cp:GetPivot() or cp.CFrame
-                    teleportTo(targetCF)
-                    task.wait(loopDelay)
-                end
-                task.wait(0.5)
+createToggle(PageMain, "Auto Teleport CP (Looping)", false, function(Value)
+    autoCPActive = Value
+    task.spawn(function()
+        while autoCPActive do
+            if #checkpoints == 0 then scanCheckpoints() end
+            for _, cp in ipairs(checkpoints) do
+                if not autoCPActive then break end
+                local targetCF = cp:IsA("Model") and cp:GetPivot() or cp.CFrame
+                teleportTo(targetCF)
+                task.wait(loopDelay)
             end
-        end)
-    end
-})
-
-TabMain:AddTextbox({
-    Name = "Teleport Manual CP",
-    Default = "",
-    TextDisappear = true,
-    Callback = function(Text)
-        local cpIndex = tonumber(Text)
-        if cpIndex and checkpoints[cpIndex] then
-            local cp = checkpoints[cpIndex]
-            local targetCF = cp:IsA("Model") and cp:GetPivot() or cp.CFrame
-            teleportTo(targetCF)
+            task.wait(0.5)
         end
+    end)
+end)
+
+createInput(PageMain, "Ketik Angka CP (Misal: 1, 2)", function(Text)
+    local cpIndex = tonumber(Text)
+    if cpIndex and checkpoints[cpIndex] then
+        local cp = checkpoints[cpIndex]
+        local targetCF = cp:IsA("Model") and cp:GetPivot() or cp.CFrame
+        teleportTo(targetCF)
     end
-})
+end)
 
--- ================= TAB 2: CUSTOM WAYPOINT =================
-TabCustom:AddSection({ Name = "Pengaturan Custom Waypoint" })
-
-TabCustom:AddButton({
-    Name = "Tambah Waypoint di Posisi Ini",
-    Callback = function()
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local currentCF = LocalPlayer.Character.HumanoidRootPart.CFrame
-            local wpIndex = #customWaypoints + 1
-            local wpName = "Waypoint " .. wpIndex
-            table.insert(customWaypoints, {Name = wpName, CF = currentCF})
-            saveWaypointsToFile()
-            
-            TabCustom:AddButton({
-                Name = "Teleport ke " .. wpName,
-                Callback = function()
-                    teleportTo(currentCF)
-                    OrionLib:MakeNotification({
-                        Name = "Teleport",
-                        Content = "Pindah ke " .. wpName,
-                        Image = "rbxassetid://4483345998",
-                        Time = 1.5
-                    })
-                end
-            })
-
-            OrionLib:MakeNotification({
-                Name = "Tersimpan",
-                Content = wpName .. " berhasil ditambahkan!",
-                Image = "rbxassetid://4483345998",
-                Time = 2
-            })
-        end
+-- --- TAB 2: WAYPOINT ---
+createButton(PageCustom, "Tambah Waypoint di Posisi Ini", function()
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local currentCF = LocalPlayer.Character.HumanoidRootPart.CFrame
+        local wpName = "Waypoint " .. (#customWaypoints + 1)
+        table.insert(customWaypoints, {Name = wpName, CF = currentCF})
+        saveWaypointsToFile()
+        renderCustomWaypointsUI()
     end
-})
+end)
 
-TabCustom:AddButton({
-    Name = "Load Config Waypoint Tersimpan",
-    Callback = function()
-        loadWaypointsFromFile()
-    end
-})
+createButton(PageCustom, "Load Config Waypoint Tersimpan", function()
+    loadWaypointsFromFile()
+end)
 
-TabCustom:AddToggle({
-    Name = "Auto Custom Teleport (Looping)",
-    Default = false,
-    Callback = function(Value)
-        autoCustomActive = Value
-        task.spawn(function()
-            while autoCustomActive do
-                if #customWaypoints == 0 then break end
-                for _, wp in ipairs(customWaypoints) do
-                    if not autoCustomActive then break end
-                    teleportTo(wp.CF)
-                    task.wait(loopDelay)
-                end
-                task.wait(0.5)
+createToggle(PageCustom, "Auto Custom Teleport (Looping)", false, function(Value)
+    autoCustomActive = Value
+    task.spawn(function()
+        while autoCustomActive do
+            if #customWaypoints == 0 then break end
+            for _, wp in ipairs(customWaypoints) do
+                if not autoCustomActive then break end
+                teleportTo(wp.CF)
+                task.wait(loopDelay)
             end
-        end)
-    end
-})
-
-TabCustom:AddButton({
-    Name = "Hapus Semua Waypoint & Saved File",
-    Callback = function()
-        customWaypoints = {}
-        if delfile and isfile and isfile(fileName) then
-            delfile(fileName)
+            task.wait(0.5)
         end
-        OrionLib:MakeNotification({
-            Name = "Reset",
-            Content = "Semua waypoint berhasil dihapus dari file.",
-            Image = "rbxassetid://4483345998",
-            Time = 2
-        })
+    end)
+end)
+
+createButton(PageCustom, "Hapus Semua Waypoint & Saved File", function()
+    customWaypoints = {}
+    renderCustomWaypointsUI()
+    if delfile and isfile and isfile(fileName) then
+        delfile(fileName)
     end
-})
+end)
 
-TabCustom:AddSection({ Name = "Daftar List Waypoint Tersimpan" })
-
--- ================= TAB 3: SETTINGS =================
-TabSettings:AddSection({ Name = "Pengaturan UI & Delay" })
-
-TabSettings:AddSlider({
-    Name = "Jeda Teleport / Delay (Detik)",
-    Min = 1,
-    Max = 10,
-    Default = 2,
-    Color = Color3.fromRGB(255, 255, 255),
-    Increment = 1,
-    ValueName = "Detik",
-    Callback = function(Value)
-        loopDelay = Value
+-- --- TAB 3: SETTING ---
+createInput(PageSettings, "Set Delay Teleport (Detik)", function(Text)
+    local num = tonumber(Text)
+    if num and num >= 1 then
+        loopDelay = num
     end
-})
+end)
 
 local function cleanupAll()
     autoCPActive = false
     autoCustomActive = false
     checkpoints = {}
     customWaypoints = {}
-    
-    local parentGui = pcall(function() return game:GetService("CoreGui") end) and game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
-    if parentGui:FindFirstChild("ToggleGui_Gunung_Fix") then
-        parentGui.ToggleGui_Gunung_Fix:Destroy()
-    end
+    MainGui:Destroy()
 end
 
-TabSettings:AddButton({
-    Name = "Close Script & Reset Status",
-    Callback = function()
-        cleanupAll()
-        OrionLib:Destroy()
-    end
-})
+createButton(PageSettings, "Close Script & Reset Status", function()
+    cleanupAll()
+end)
 
--- ================= DRAGGABLE TOGGLE BUTTON =================
-local function createDraggableButton()
-    local parentGui = pcall(function() return game:GetService("CoreGui") end) and game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
+-- ================= TOMBOL EVENT HANDLER =================
+MinimizeBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+end)
 
-    if parentGui:FindFirstChild("ToggleGui_Gunung_Fix") then
-        parentGui.ToggleGui_Gunung_Fix:Destroy()
-    end
+MenuToggleBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+end)
 
-    local sg = Instance.new("ScreenGui")
-    sg.Name = "ToggleGui_Gunung_Fix"
-    sg.Parent = parentGui
-    sg.ResetOnSpawn = false
-
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 40, 0, 40)
-    btn.Position = UDim2.new(0.05, 0, 0.15, 0)
-    btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    btn.Text = "MENU"
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Font = Enum.Font.SourceSansBold
-    btn.TextSize = 11
-    btn.Active = true
-    btn.Draggable = true
-    btn.Parent = sg
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 20)
-    corner.Parent = btn
-
-    local isShown = true
-    btn.MouseButton1Click:Connect(function()
-        isShown = not isShown
-        for _, gui in pairs(parentGui:GetChildren()) do
-            if gui:IsA("ScreenGui") and gui.Name == "Orion" then
-                gui.Enabled = isShown
-            end
-        end
-    end)
-end
-
-createDraggableButton()
-OrionLib:Init()
+CloseBtn.MouseButton1Click:Connect(function()
+    cleanupAll()
+end)
