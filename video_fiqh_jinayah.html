@@ -52,14 +52,6 @@
             border-radius: 15px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
         }
-
-        /* Teks Status */
-        .status-text {
-            margin-top: 15px;
-            font-size: 14px;
-            color: #888;
-            font-weight: 500;
-        }
     </style>
 </head>
 <body>
@@ -69,37 +61,33 @@
 
         <!-- Area Gambar Surat -->
         <div class="surat-wrapper" onclick="putarAudioFullVolume()">
-            <!-- Gambar Amplop Surat Cinta/Pesan -->
+            <!-- Gambar Amplop Surat -->
             <img src="https://cdn-icons-png.flaticon.com/512/646/646094.png" alt="Gambar Surat" class="surat-img">
         </div>
-
-        <p class="status-text" id="status">Status: Belum diputar</p>
     </div>
 
-    <!-- Elemen Audio -->
+    <!-- Elemen Audio (Sembunyi) -->
     <audio id="myAudio">
         <!-- Ganti tautan di bawah ini dengan file mp3 kamu -->
-        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+        <source src="https://mvlrfq.github.io/Rafa/bgd.mp3" type="audio/mpeg">
         Browser Anda tidak mendukung elemen audio.
     </audio>
 
     <script>
         function putarAudioFullVolume() {
             var audio = document.getElementById("myAudio");
-            var statusText = document.getElementById("status");
 
-            // Atur volume audio ke tingkat MAKSIMAL (1.0 = 100%)
-            audio.volume = 1.0;
-
-            // Cek apakah audio sedang diputar atau tidak
+            // Hanya putar jika audio belum/sedang tidak berjalan
             if (audio.paused) {
+                // Atur volume audio ke tingkat MAKSIMAL (1.0 = 100%)
+                audio.volume = 1.0;
+                
+                // Memutar audio
                 audio.play();
-                statusText.innerText = "Status: Musik Diputar dengan Volume Penuh (100%) 🔊🎵";
-                statusText.style.color = "#d81b60";
-            } else {
-                audio.pause();
-                statusText.innerText = "Status: Musik Dihentikan ⏸️";
-                statusText.style.color = "#888";
+
+                // Menonaktifkan efek klik pada wrapper surat agar tidak bisa diklik lagi
+                document.querySelector('.surat-wrapper').onclick = null;
+                document.querySelector('.surat-wrapper').style.cursor = "default";
             }
         }
     </script>
