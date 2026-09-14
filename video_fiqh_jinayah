@@ -1,115 +1,104 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tampilan Foto Elegan</title>
-  <style>
-    /* Reset CSS dasar */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surat Musik Interaktif</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
 
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f4f5f7; /* Latar belakang lembut agar foto menonjol */
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 40px 20px;
-    }
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #fce4ec; /* Warna latar belakang lembut */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-    /* Container utama agar tidak memenuhi layar / tidak full screen */
-    .gallery-container {
-      width: 100%;
-      max-width: 650px; /* Lebar maksimal agar pas dan tidak full screen */
-      margin: 0 auto;
-    }
+        .container {
+            text-align: center;
+        }
 
-    /* Frame Bingkai Elegan */
-    .photo-card {
-      background: #ffffff;
-      padding: 16px; /* Jarak foto dari tepi bingkai */
-      border-radius: 20px; /* Sudut melengkung halus */
-      /* Bayangan lembut ganda untuk efek kedalaman mewah */
-      box-shadow: 
-        0 10px 25px rgba(0, 0, 0, 0.05),
-        0 20px 48px rgba(0, 0, 0, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.8);
-      transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), 
-                  box-shadow 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-    }
+        h2 {
+            color: #d81b60;
+            margin-bottom: 20px;
+        }
 
-    /* Efek interaktif saat kursor diarahkan ke bingkai */
-    .photo-card:hover {
-      transform: translateY(-6px);
-      box-shadow: 
-        0 15px 30px rgba(0, 0, 0, 0.08),
-        0 25px 50px rgba(0, 0, 0, 0.1);
-    }
+        /* Container untuk Gambar Surat */
+        .surat-wrapper {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
 
-    /* Pembungkus gambar */
-    .photo-wrapper {
-      width: 100%;
-      overflow: hidden;
-      border-radius: 14px; /* Mengikuti lekukan bingkai dalam */
-      background-color: #eee;
-    }
+        .surat-wrapper:hover {
+            transform: scale(1.05); /* Efek membesar sedikit saat kursor mengarah ke gambar */
+        }
 
-    /* Pengaturan Foto */
-    .photo-wrapper img {
-      width: 100%;
-      height: auto;
-      display: block;
-      object-fit: cover;
-      transition: transform 0.5s ease;
-    }
+        .surat-wrapper:active {
+            transform: scale(0.95); /* Efek menekan saat diklik */
+        }
 
-    /* Zoom halus pada gambar saat di-hover */
-    .photo-card:hover .photo-wrapper img {
-      transform: scale(1.02);
-    }
+        /* Styling Gambar */
+        .surat-img {
+            width: 250px;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
 
-    /* Keterangan / Caption di bawah foto */
-    .photo-caption {
-      text-align: center;
-      margin-top: 16px;
-      margin-bottom: 8px;
-    }
-
-    .photo-caption h3 {
-      font-size: 1.1rem;
-      color: #2c3e50;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-
-    .photo-caption p {
-      font-size: 0.875rem;
-      color: #7f8c8d;
-      margin-top: 4px;
-    }
-  </style>
+        /* Teks instruksi/status */
+        .status-text {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #888;
+        }
+    </style>
 </head>
 <body>
 
-  <div class="gallery-container">
-    <div class="photo-card">
-      <div class="photo-wrapper">
-        <!-- URL Foto Anda sudah dimasukkan di sini dengan protokol https:// -->
-        <img src="https://mvlrfq.github.io/Wak/rhn.PNG" alt="Foto rhn">
-      </div>
-      
-      <!-- Caption opsional (bisa dihapus jika tidak diperlukan) -->
-      <div class="photo-caption">
-        <h3>Foto Galeri</h3>
-        <p>Tampilan elegan & proporsional</p>
-      </div>
+    <div class="container">
+        <h2>Klik Surat di Bawah Ini!</h2>
+
+        <!-- Area Gambar Surat -->
+        <div class="surat-wrapper" onclick="putarAudio()">
+            <!-- Kamu bisa mengganti URL gambar di bawah ini dengan gambar surat kamu sendiri -->
+            <img src="https://cdn-icons-png.flaticon.com/512/2850/2850389.png" alt="Gambar Surat" class="surat-img">
+        </div>
+
+        <p class="status-text" id="status">Status: Belum diputar</p>
     </div>
-  </div>
+
+    <!-- Elemen Audio (Sembunyi) -->
+    <!-- Ganti 'audio.mp3' dengan URL/path file audio milikmu -->
+    <audio id="myAudio">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+        Browser Anda tidak mendukung elemen audio.
+    </audio>
+
+    <script>
+        function putarAudio() {
+            var audio = document.getElementById("myAudio");
+            var statusText = document.getElementById("status");
+
+            // Cek apakah audio sedang diputar atau tidak
+            if (audio.paused) {
+                audio.play();
+                statusText.innerText = "Status: Musik Sedang Diputar 🎵";
+                statusText.style.color = "#d81b60";
+            } else {
+                audio.pause();
+                statusText.innerText = "Status: Musik Dihentikan ⏸️";
+                statusText.style.color = "#888";
+            }
+        }
+    </script>
 
 </body>
 </html>
