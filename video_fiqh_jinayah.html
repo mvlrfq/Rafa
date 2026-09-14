@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>bgudung</title>
+    <title>Surat Musik Interaktif</title>
     <style>
         * {
             box-sizing: border-box;
@@ -18,6 +18,7 @@
             align-items: center;
             background-color: #fce4ec; /* Warna latar belakang */
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
         }
 
         .container {
@@ -52,21 +53,92 @@
             border-radius: 15px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
         }
+
+        /* STYLING FLOATING WINDOW (MODAL) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); /* Latar belakang agak gelap/transparan */
+            backdrop-filter: blur(4px); /* Efek blur latar belakang */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+            z-index: 1000;
+        }
+
+        /* Tampilan Window Pop-up saat Aktif */
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Window Floating Card (Ukuran ~50% Layar) */
+        .floating-window {
+            width: 50vw; /* 50% dari lebar layar */
+            max-height: 80vh; /* Maksimal 80% dari tinggi layar agar tidak terpotong */
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            transform: scale(0.7);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Efek animasi membesar saat muncul */
+        .modal-overlay.active .floating-window {
+            transform: scale(1);
+        }
+
+        /* Gambar di dalam Window Floating */
+        .photo-inside {
+            width: 100%;
+            max-height: 60vh;
+            object-fit: cover; /* Agar gambar pas dan tidak distorsi */
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Penyesuaian Responsif untuk Layar HP/Mobile */
+        @media (max-width: 768px) {
+            .floating-window {
+                width: 80vw; /* Pada HP menggunakan 80% layar agar foto tetap terlihat jelas */
+            }
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>klick surat dibawah ini! ✉️</h2>
+        <h2>Buka Surat Ini! ✉️</h2>
 
         <!-- Area Gambar Surat -->
-        <div class="surat-wrapper" onclick="putarAudioFullVolume()">
+        <div class="surat-wrapper" onclick="bukaSurat()">
             <!-- Gambar Amplop Surat -->
             <img src="https://cdn-icons-png.flaticon.com/512/646/646094.png" alt="Gambar Surat" class="surat-img">
         </div>
     </div>
 
-    <!-- Elemen Audio (Sembunyi) -->
+    <!-- FLOATING WINDOW (MODAL) -->
+    <div class="modal-overlay" id="myModal">
+        <div class="floating-window">
+            <!-- GANTI URL/PATH GANTI FOTO KAMU DI SINI (src="...") -->
+            <img src="https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=1000&auto=format&fit=crop" alt="Foto Kenangan" class="photo-inside">
+        </div>
+    </div>
+
+    <!-- Elemen Audio dengan Fitur Loop -->
     <audio id="myAudio" loop>
         <!-- Ganti tautan di bawah ini dengan file mp3 kamu -->
         <source src="https://mvlrfq.github.io/Rafa/bgd.mp3" type="audio/mpeg">
@@ -74,21 +146,22 @@
     </audio>
 
     <script>
-        function putarAudioFullVolume() {
+        function bukaSurat() {
             var audio = document.getElementById("myAudio");
+            var modal = document.getElementById("myModal");
 
-            // Hanya putar jika audio belum/sedang tidak berjalan
+            // 1. Atur Volume Maksimal (100%) dan Memutar Audio
             if (audio.paused) {
-                // Atur volume audio ke tingkat MAKSIMAL (1.0 = 100%)
                 audio.volume = 1.0;
-                
-                // Memutar audio
                 audio.play();
-
-                // Menonaktifkan efek klik pada wrapper surat agar tidak bisa diklik lagi
-                document.querySelector('.surat-wrapper').onclick = null;
-                document.querySelector('.surat-wrapper').style.cursor = "default";
             }
+
+            // 2. Tampilkan Floating Window
+            modal.classList.add("active");
+
+            // 3. Matikan Klik Pada Gambar Surat (Tidak Bisa Dihentikan Lagi)
+            document.querySelector('.surat-wrapper').onclick = null;
+            document.querySelector('.surat-wrapper').style.cursor = "default";
         }
     </script>
 
