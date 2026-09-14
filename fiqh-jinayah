@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surat Musik Interaktif</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #fce4ec; /* Warna latar belakang lembut */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        h2 {
+            color: #d81b60;
+            margin-bottom: 20px;
+        }
+
+        /* Container untuk Gambar Surat */
+        .surat-wrapper {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .surat-wrapper:hover {
+            transform: scale(1.05); /* Efek membesar sedikit saat kursor mengarah ke gambar */
+        }
+
+        .surat-wrapper:active {
+            transform: scale(0.95); /* Efek menekan saat diklik */
+        }
+
+        /* Styling Gambar */
+        .surat-img {
+            width: 250px;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Teks instruksi/status */
+        .status-text {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Klik Surat di Bawah Ini!</h2>
+
+        <!-- Area Gambar Surat -->
+        <div class="surat-wrapper" onclick="putarAudio()">
+            <!-- Kamu bisa mengganti URL gambar di bawah ini dengan gambar surat kamu sendiri -->
+            <img src="https://cdn-icons-png.flaticon.com/512/2850/2850389.png" alt="Gambar Surat" class="surat-img">
+        </div>
+
+        <p class="status-text" id="status">Status: Belum diputar</p>
+    </div>
+
+    <!-- Elemen Audio (Sembunyi) -->
+    <!-- Ganti 'audio.mp3' dengan URL/path file audio milikmu -->
+    <audio id="myAudio">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+        Browser Anda tidak mendukung elemen audio.
+    </audio>
+
+    <script>
+        function putarAudio() {
+            var audio = document.getElementById("myAudio");
+            var statusText = document.getElementById("status");
+
+            // Cek apakah audio sedang diputar atau tidak
+            if (audio.paused) {
+                audio.play();
+                statusText.innerText = "Status: Musik Sedang Diputar 🎵";
+                statusText.style.color = "#d81b60";
+            } else {
+                audio.pause();
+                statusText.innerText = "Status: Musik Dihentikan ⏸️";
+                statusText.style.color = "#888";
+            }
+        }
+    </script>
+
+</body>
+</html>
