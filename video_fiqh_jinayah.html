@@ -16,7 +16,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: #fce4ec; /* Warna latar belakang lembut */
+            background-color: #fce4ec; /* Warna latar belakang */
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
@@ -38,14 +38,14 @@
         }
 
         .surat-wrapper:hover {
-            transform: scale(1.05); /* Efek membesar sedikit saat kursor mengarah ke gambar */
+            transform: scale(1.05); /* Efek membesar saat kursor di atasnya */
         }
 
         .surat-wrapper:active {
-            transform: scale(0.95); /* Efek menekan saat diklik */
+            transform: scale(0.95); /* Efek membal saat diklik */
         }
 
-        /* Styling Gambar */
+        /* Styling Gambar Surat */
         .surat-img {
             width: 250px;
             height: auto;
@@ -53,44 +53,48 @@
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
         }
 
-        /* Teks instruksi/status */
+        /* Teks Status */
         .status-text {
             margin-top: 15px;
             font-size: 14px;
             color: #888;
+            font-weight: 500;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>Klik Surat di Bawah Ini!</h2>
+        <h2>Buka Surat Ini! ✉️</h2>
 
         <!-- Area Gambar Surat -->
-        <div class="surat-wrapper" onclick="putarAudio()">
-            <!-- Kamu bisa mengganti URL gambar di bawah ini dengan gambar surat kamu sendiri -->
-            <img src="https://cdn-icons-png.flaticon.com/512/2850/2850389.png" alt="Gambar Surat" class="surat-img">
+        <div class="surat-wrapper" onclick="putarAudioFullVolume()">
+            <!-- Gambar Amplop Surat Cinta/Pesan -->
+            <img src="https://cdn-icons-png.flaticon.com/512/646/646094.png" alt="Gambar Surat" class="surat-img">
         </div>
 
         <p class="status-text" id="status">Status: Belum diputar</p>
     </div>
 
-    <!-- Elemen Audio (Sembunyi) -->
-    <!-- Ganti 'audio.mp3' dengan URL/path file audio milikmu -->
+    <!-- Elemen Audio -->
     <audio id="myAudio">
+        <!-- Ganti tautan di bawah ini dengan file mp3 kamu -->
         <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
         Browser Anda tidak mendukung elemen audio.
     </audio>
 
     <script>
-        function putarAudio() {
+        function putarAudioFullVolume() {
             var audio = document.getElementById("myAudio");
             var statusText = document.getElementById("status");
+
+            // Atur volume audio ke tingkat MAKSIMAL (1.0 = 100%)
+            audio.volume = 1.0;
 
             // Cek apakah audio sedang diputar atau tidak
             if (audio.paused) {
                 audio.play();
-                statusText.innerText = "Status: Musik Sedang Diputar 🎵";
+                statusText.innerText = "Status: Musik Diputar dengan Volume Penuh (100%) 🔊🎵";
                 statusText.style.color = "#d81b60";
             } else {
                 audio.pause();
