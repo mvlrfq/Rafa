@@ -114,7 +114,7 @@
   <div class="frame-container">
     <div class="img-wrapper">
       <!-- Ganti URL_GAMBAR_ANDA.jpg dengan lokasi/URL gambar kamu -->
-      <img src="URL_GAMBAR_ANDA.jpg" alt="Gambar Full Screen" class="fullscreen-img">
+      <img src="https://mvlrfq.github.io/Rafa/DSC_1119.jpeg" alt="Gambar Full Screen" class="fullscreen-img">
     </div>
   </div>
 
