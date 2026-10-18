@@ -85,17 +85,94 @@ ToggleCorner.Parent = ToggleBtn
 -- 2. ELEMENT ISI (SEARCH, LIST, PLAYER BAR)
 --------------------------------------------------------------------------------
 -- Search Box
+--------------------------------------------------------------------------------
+-- KOTAK PENCARIAN & TOMBOL CARI KHUSUS MOBILE
+--------------------------------------------------------------------------------
+-- Kolom Pencarian (Lebarnya dikurangi sedikit untuk memberi ruang tombol cari)
 local SearchBox = Instance.new("TextBox")
-SearchBox.Size = UDim2.new(1, -32, 0, 34)
+SearchBox.Size = UDim2.new(1, -66, 0, 34)
 SearchBox.Position = UDim2.new(0, 16, 0, 42)
 SearchBox.BackgroundColor3 = Color3.fromRGB(28, 36, 52)
-SearchBox.PlaceholderText = "Cari nama berkas / lagu..."
+SearchBox.PlaceholderText = "Ketik judul lagu..."
 SearchBox.PlaceholderColor3 = Color3.fromRGB(140, 155, 180)
 SearchBox.Text = ""
 SearchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 SearchBox.TextSize = 11
 SearchBox.Font = Enum.Font.Gotham
 SearchBox.Parent = MainFrame
+
+local SearchCorner = Instance.new("UICorner")
+SearchCorner.CornerRadius = UDim.new(0, 10)
+SearchCorner.Parent = SearchBox
+
+-- Tombol Cari (Dipasang di sebelah kanan kolom pencarian agar mudah ditekan)
+local SearchBtn = Instance.new("TextButton")
+SearchBtn.Size = UDim2.new(0, 46, 0, 34)
+SearchBtn.Position = UDim2.new(1, -54, 0, 42)
+SearchBtn.BackgroundColor3 = Color3.fromRGB(41, 158, 239)
+SearchBtn.Text = "Cari"
+SearchBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SearchBtn.TextSize = 12
+SearchBtn.Font = Enum.Font.GothamBold
+SearchBtn.Parent = MainFrame
+
+local SearchBtnCorner = Instance.new("UICorner")
+SearchBtnCorner.CornerRadius = UDim.new(0, 10)
+SearchBtnCorner.Parent = SearchBtn
+
+--------------------------------------------------------------------------------
+-- FUNGSI EKsekusi PENCARIAN
+--------------------------------------------------------------------------------
+local function ExecuteSearch()
+    if SearchBox.Text == "" then return end
+    
+    -- Bersihkan hasil lama
+    for _, c in pairs(ScrollFrame:GetChildren()) do
+        if c:IsA("TextButton") then c:Destroy() end
+    end
+    
+    TrackTitle.Text = "Mencari lagu..."
+    
+    task.spawn(function()
+        local searchUrl = SERVER_URL .. "/api/search?q=" .. HttpService:UrlEncode(SearchBox.Text)
+        local res = customRequest({ Url = searchUrl, Method = "GET" })
+        
+        if res and res.Body then
+            local success, data = pcall(function() return HttpService:JSONDecode(res.Body) end)
+            if success and data.success and data.results then
+                ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, (#data.results * 32) + 8)
+                for _, song in ipairs(data.results) do
+                    local btn = Instance.new("TextButton")
+                    btn.Size = UDim2.new(1, 0, 0, 28)
+                    btn.BackgroundColor3 = Color3.fromRGB(32, 42, 61)
+                    btn.Text = "  " .. song.title
+                    btn.TextColor3 = Color3.fromRGB(230, 240, 255)
+                    btn.TextXAlignment = Enum.TextXAlignment.Left
+                    btn.TextSize = 11
+                    btn.Font = Enum.Font.Gotham
+                    btn.Parent = ScrollFrame
+                    
+                    local btnCorner = Instance.new("UICorner")
+                    btnCorner.CornerRadius = UDim.new(0, 6)
+                    btnCorner.Parent = btn
+                    
+                    btn.MouseButton1Click:Connect(function()
+                        PlayTrack(song.id, song.title)
+                    end)
+                end
+                TrackTitle.Text = "Pilih lagu dari daftar"
+            else
+                TrackTitle.Text = "Lagu tidak ditemukan!"
+            end
+        else
+            TrackTitle.Text = "Gagal terhubung ke server!"
+        end
+    end)
+end
+
+-- Menjalankan pencarian saat tombol "Cari" ditekan atau saat focus hilang
+SearchBtn.MouseButton1Click:Connect(ExecuteSearch)
+SearchBox.FocusLost:Connect(ExecuteSearch)
 
 local SearchCorner = Instance.new("UICorner")
 SearchCorner.CornerRadius = UDim.new(0, 10)
