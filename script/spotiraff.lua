@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
-local SERVER_URL = "http://192.168.1.10:3000" -- Ganti dengan IP PC Anda
+local SERVER_URL = "https://mesa-reactions-electro-subscription.trycloudflare.com" -- Ganti dengan IP PC Anda
 
 -- Hapus UI lama jika ada
 if PlayerGui:FindFirstChild("SimpleNavyUI") then
