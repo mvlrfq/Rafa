@@ -7,7 +7,7 @@ local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 --------------------------------------------------------------------------------
 -- 1. KONFIGURASI URL PUBLIC SERVER
 --------------------------------------------------------------------------------
-local SERVER_URL = "https://hair-budgets-palmer-producers.trycloudflare.com"
+local SERVER_URL = "https://aviation-mario-machines-soldier.trycloudflare.com"
 
 -- Hapus UI lama jika ada
 if PlayerGui:FindFirstChild("SimpleNavyUI") then
