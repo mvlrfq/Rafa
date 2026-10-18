@@ -318,6 +318,7 @@ local function ExecuteSearch()
         end
         
         if res.Body then
+            -- Coba decode JSON, jika gagal tampilkan cuplikan teks aslinya di layar
             local success, data = pcall(function() return HttpService:JSONDecode(res.Body) end)
             if success and data and data.success and data.results then
                 ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, (#data.results * 32) + 8)
@@ -342,7 +343,8 @@ local function ExecuteSearch()
                 end
                 TrackTitle.Text = "Pilih lagu dari daftar"
             else
-                TrackTitle.Text = "Error JSON / Lagu tidak ditemukan"
+                -- Tampilkan 40 karakter pertama dari server di layar untuk dianalisis
+                TrackTitle.Text = "Respon Server: " .. string.sub(tostring(res.Body), 1, 40)
             end
         else
             TrackTitle.Text = "Error: Respon server kosong"
