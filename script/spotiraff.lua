@@ -345,6 +345,9 @@ local function ExecuteSearch()
             else
                 -- Tampilkan 40 karakter pertama dari server di layar untuk dianalisis
                 TrackTitle.Text = "Respon Server: " .. string.sub(tostring(res.Body), 1, 40)
+                  task.delay(10, function()
+                     TrackTitle.Text = "terjadi error di pihak server"
+              end)
             end
         else
             TrackTitle.Text = "Error: Respon server kosong"
