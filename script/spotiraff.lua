@@ -9,7 +9,7 @@ local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 --------------------------------------------------------------------------------
 -- 1. KONFIGURASI URL PUBLIC SERVER
 --------------------------------------------------------------------------------
-local SERVER_URL = "https://injured-jamie-malpractice-postposted.trycloudflare.com"
+local SERVER_URL = "https://smoking-church-tomatoes-lay.trycloudflare.com"
 
 -- Hapus UI lama jika ada
 if PlayerGui:FindFirstChild("NavySpotifyUI") then
