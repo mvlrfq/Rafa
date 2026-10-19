@@ -1,5 +1,5 @@
 -- Spotify Navy Dashboard - Universal (Android & iOS)
--- Features: Fixed Volume Layout, Boundary Clamp Fix, Seek Dragging, Auto-Next/Shuffle Playlist, Next/Prev Buttons, Delete Confirmation Dialog
+-- Features: Fixed Track Title Sync, Isolated Download vs Player Status, Smooth Drag, Persistent UI on Respawn, Double-Execution Cleanup
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -9,10 +9,17 @@ local TweenService = game:GetService("TweenService")
 local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
 --------------------------------------------------------------------------------
--- 1. KONFIGURASI SERVER
+-- 1. KONFIGURASI SERVER & CLEANUP EKSEKUSI GANDA (ANTI TABRAKAN)
 --------------------------------------------------------------------------------
 local SERVER_URL = "https://till-however-arts-zinc.trycloudflare.com"
 local LOCAL_JSON_FILE = "navyspotify_playlist.json"
+
+-- Jika script dieksekusi 2 kali, matikan audio & hapus UI lama agar tidak tabrakan
+local ExistingSound = SoundService:FindFirstChild("NavySpotifySound")
+if ExistingSound then
+    ExistingSound:Stop()
+    ExistingSound:Destroy()
+end
 
 if PlayerGui:FindFirstChild("NavySpotifyUI") then
     PlayerGui.NavySpotifyUI:Destroy()
@@ -20,8 +27,8 @@ end
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "NavySpotifyUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.DisplayOrder = 2147483647 -- Max DisplayOrder agar dipastikan paling depan
+ScreenGui.ResetOnSpawn = false -- UI TIDAK AKAN HILANG saat respawn / cutscene
+ScreenGui.DisplayOrder = 2147483647
 ScreenGui.IgnoreGuiInset = true
 ScreenGui.Parent = PlayerGui
 
@@ -34,7 +41,6 @@ MainFrame.Position = UDim2.new(0.5, -290, 0.5, -165)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 20, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
-MainFrame.Draggable = true
 MainFrame.ClipsDescendants = false
 MainFrame.Parent = ScreenGui
 
@@ -48,12 +54,13 @@ MainStroke.Thickness = 1.5
 MainStroke.Parent = MainFrame
 
 local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1, 0, 0, 32)
+TopBar.Size = UDim2.new(1, -40, 0, 32)
 TopBar.BackgroundTransparency = 1
+TopBar.Active = true
 TopBar.Parent = MainFrame
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -60, 1, 0)
+Title.Size = UDim2.new(1, -20, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Text = "🎵 Spotify Navy Dashboard"
@@ -65,7 +72,7 @@ Title.Parent = TopBar
 
 local MinBtn = Instance.new("TextButton")
 MinBtn.Size = UDim2.new(0, 24, 0, 24)
-MinBtn.Position = UDim2.new(1, -30, 0, 4)
+MinBtn.Position = UDim2.new(1, 6, 0, 4)
 MinBtn.BackgroundColor3 = Color3.fromRGB(28, 38, 56)
 MinBtn.Text = "-"
 MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -84,7 +91,6 @@ ToggleBtn.BackgroundColor3 = Color3.fromRGB(41, 158, 239)
 ToggleBtn.Text = "🎵"
 ToggleBtn.TextSize = 20
 ToggleBtn.Active = true
-ToggleBtn.Draggable = true
 ToggleBtn.Visible = false
 ToggleBtn.Parent = ScreenGui
 
@@ -108,41 +114,48 @@ ResizeCorner.CornerRadius = UDim.new(0, 4)
 ResizeCorner.Parent = ResizeHandle
 
 --------------------------------------------------------------------------------
--- 3. PERBAIKAN BOUNDARY GUARD (ANTI MELONCAT KE ATAS)
+-- 3. CUSTOM SMOOTH DRAGGING
 --------------------------------------------------------------------------------
-local isClamping = false
+local function SetupSmoothDrag(frame, handle)
+    local dragging = false
+    local dragInput, dragStart, startPos
 
-local function SafeClampToScreen(frame)
-    if isClamping then return end
-    local camera = workspace.CurrentCamera
-    if not camera then return end
-    local viewport = camera.ViewportSize
-    
-    local absPos = frame.AbsolutePosition
-    local absSize = frame.AbsoluteSize
-    
-    local minX, minY = 5, 5
-    local maxX = math.max(minX, viewport.X - absSize.X - 5)
-    local maxY = math.max(minY, viewport.Y - absSize.Y - 5)
-    
-    local clampedX = math.clamp(absPos.X, minX, maxX)
-    local clampedY = math.clamp(absPos.Y, minY, maxY)
-    
-    if math.abs(absPos.X - clampedX) > 2 or math.abs(absPos.Y - clampedY) > 2 then
-        isClamping = true
-        frame.Position = UDim2.new(0, clampedX, 0, clampedY)
-        task.wait(0.05)
-        isClamping = false
-    end
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = Vector2.new(frame.AbsolutePosition.X, frame.AbsolutePosition.Y)
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    handle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            local camera = workspace.CurrentCamera
+            local viewport = camera and camera.ViewportSize or Vector2.new(1280, 720)
+            
+            local newX = math.clamp(startPos.X + delta.X, 0, math.max(0, viewport.X - frame.AbsoluteSize.X))
+            local newY = math.clamp(startPos.Y + delta.Y, 0, math.max(0, viewport.Y - frame.AbsoluteSize.Y))
+            
+            frame.Position = UDim2.new(0, newX, 0, newY)
+        end
+    end)
 end
 
-MainFrame:GetPropertyChangedSignal("Position"):Connect(function()
-    SafeClampToScreen(MainFrame)
-end)
-
-ToggleBtn:GetPropertyChangedSignal("Position"):Connect(function()
-    SafeClampToScreen(ToggleBtn)
-end)
+SetupSmoothDrag(MainFrame, TopBar)
+SetupSmoothDrag(ToggleBtn, ToggleBtn)
 
 -- Resizing Logic
 local isResizing = false
@@ -172,7 +185,7 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 --------------------------------------------------------------------------------
--- 4. SIDEBAR KIRI (NAVIGASI & WIDGET PING)
+-- 4. SIDEBAR KIRI
 --------------------------------------------------------------------------------
 local Sidebar = Instance.new("Frame")
 Sidebar.Size = UDim2.new(0, 150, 1, -40)
@@ -303,7 +316,7 @@ local SearchStatusLabel = Instance.new("TextLabel")
 SearchStatusLabel.Size = UDim2.new(1, 0, 0, 16)
 SearchStatusLabel.Position = UDim2.new(0, 0, 0, 36)
 SearchStatusLabel.BackgroundTransparency = 1
-SearchStatusLabel.Text = "Status: Siap mencari..."
+SearchStatusLabel.Text = "Status Pencarian: Siap mencari..."
 SearchStatusLabel.TextColor3 = Color3.fromRGB(150, 170, 200)
 SearchStatusLabel.TextSize = 9
 SearchStatusLabel.Font = Enum.Font.Gotham
@@ -389,7 +402,7 @@ LocalScrollList.Padding = UDim.new(0, 4)
 LocalScrollList.Parent = LocalScroll
 
 --------------------------------------------------------------------------------
--- 6. ACTIVE PLAYER PANEL DENGAN TATA LETAK RAPI (FIX VOLUME OVERLAP)
+-- 6. ACTIVE PLAYER PANEL
 --------------------------------------------------------------------------------
 local PlayerBar = Instance.new("Frame")
 PlayerBar.Size = UDim2.new(1, 0, 0, 85)
@@ -424,7 +437,7 @@ PlayerStatusLabel.Font = Enum.Font.Gotham
 PlayerStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 PlayerStatusLabel.Parent = PlayerBar
 
--- Seekable Progress Bar (Interactive Line)
+-- Seekable Progress Bar
 local ProgressBg = Instance.new("TextButton")
 ProgressBg.Size = UDim2.new(1, -12, 0, 6)
 ProgressBg.Position = UDim2.new(0, 6, 0, 36)
@@ -447,7 +460,7 @@ local ProgressFillCorner = Instance.new("UICorner")
 ProgressFillCorner.CornerRadius = UDim.new(1, 0)
 ProgressFillCorner.Parent = ProgressFill
 
--- Row Kontrol & Volume (Dirapikan Total agar Tidak Menutup Satu Sama Lain)
+-- Baris Tombol Kontrol
 local PrevBtn = Instance.new("TextButton")
 PrevBtn.Size = UDim2.new(0, 24, 0, 24)
 PrevBtn.Position = UDim2.new(0, 6, 0, 52)
@@ -544,7 +557,7 @@ TimeLabel.Font = Enum.Font.Gotham
 TimeLabel.TextXAlignment = Enum.TextXAlignment.Right
 TimeLabel.Parent = PlayerBar
 
--- Volume Section Rapi di Sebelah Kanan
+-- Volume Section
 local VolIcon = Instance.new("TextLabel")
 VolIcon.Size = UDim2.new(0, 14, 0, 24)
 VolIcon.Position = UDim2.new(1, -128, 0, 52)
@@ -585,7 +598,7 @@ VolInputCorner.CornerRadius = UDim.new(0, 4)
 VolInputCorner.Parent = VolInputBox
 
 --------------------------------------------------------------------------------
--- 7. DIALOG KONFIRMASI HAPUS PERMANEN (MODAL DIALOG)
+-- 7. DIALOG KONFIRMASI HAPUS PERMANEN (MODAL)
 --------------------------------------------------------------------------------
 local ConfirmOverlay = Instance.new("Frame")
 ConfirmOverlay.Size = UDim2.new(1, 0, 1, 0)
@@ -655,7 +668,7 @@ ConfirmDelCorner.CornerRadius = UDim.new(0, 5)
 ConfirmDelCorner.Parent = ConfirmDeleteBtn
 
 --------------------------------------------------------------------------------
--- 8. ANIMASI SKELETON PULSE
+-- 8. ANIMASI SKELETON LOADING
 --------------------------------------------------------------------------------
 local activeSkeletonTweens = {}
 
@@ -724,7 +737,7 @@ TabLocalBtn.MouseButton1Click:Connect(function()
 end)
 
 --------------------------------------------------------------------------------
--- 10. LOGIKA AUDIO, PLAYLIST AUTO-NEXT & SEEK DRAGGING
+-- 10. AUDIO ENGINE & SINKRONISASI PEMUTAR
 --------------------------------------------------------------------------------
 local writefileFn = writefile or (syn and syn.writefile)
 local readfileFn = readfile or (syn and syn.readfile)
@@ -780,13 +793,10 @@ task.spawn(function()
     end
 end)
 
-local CurrentSound = SoundService:FindFirstChild("NavySpotifySound")
-if not CurrentSound then
-    CurrentSound = Instance.new("Sound")
-    CurrentSound.Name = "NavySpotifySound"
-    CurrentSound.Volume = 1
-    CurrentSound.Parent = SoundService
-end
+local CurrentSound = Instance.new("Sound")
+CurrentSound.Name = "NavySpotifySound"
+CurrentSound.Volume = 1
+CurrentSound.Parent = SoundService
 
 RunService.RenderStepped:Connect(function()
     if CurrentSound.IsPlaying and CurrentSound.TimeLength > 0 then
@@ -802,8 +812,10 @@ end)
 
 local PlayLocalTrackIndex -- forward decl
 
--- AUTO-NEXT TRAK KETIKA LAGU SELESAI
 CurrentSound.Ended:Connect(function()
+    PlayBtn.Text = "▶"
+    PlayerStatusLabel.Text = "Status: Selesai"
+    
     if isPlaylistMode then
         local playlist = LoadLocalPlaylist()
         if #playlist > 0 then
@@ -811,7 +823,9 @@ CurrentSound.Ended:Connect(function()
                 currentLocalIndex = math.random(1, #playlist)
             else
                 currentLocalIndex = currentLocalIndex + 1
-                if currentLocalIndex > #playlist then currentLocalIndex = 1 end
+                if currentLocalIndex > #playlist then 
+                    currentLocalIndex = 1 
+                end
             end
             PlayLocalTrackIndex(currentLocalIndex)
         end
@@ -823,16 +837,21 @@ PlayLocalTrackIndex = function(index)
     if #playlist > 0 and playlist[index] then
         currentLocalIndex = index
         local item = playlist[index]
+        
+        TrackTitle.Text = "🎵 " .. item.title
+        
         if isfileFn and isfileFn(item.fileName) then
-            TrackTitle.Text = "🎵 " .. item.title
-            PlayerStatusLabel.Text = "Status: 📂 Memuat file lokal..."
+            PlayerStatusLabel.Text = "Status: 📂 Memuat file..."
             local assetUrl = getcustomassetFn(item.fileName)
+            
             CurrentSound:Stop()
+            CurrentSound.TimePosition = 0
             CurrentSound.SoundId = assetUrl
+            
             task.wait(0.1)
             CurrentSound:Play()
             PlayBtn.Text = "⏸"
-            PlayerStatusLabel.Text = "Status: 🟢 Memutar dari Penyimpanan Lokal"
+            PlayerStatusLabel.Text = "Status: 🟢 Memutar Lagu Lokal"
         else
             PlayerStatusLabel.Text = "Status: ❌ File lokal hilang!"
         end
@@ -894,7 +913,7 @@ LoopBtn.MouseButton1Click:Connect(function()
     LoopBtn.BackgroundColor3 = CurrentSound.Looped and Color3.fromRGB(41, 158, 239) or Color3.fromRGB(40, 52, 75)
 end)
 
--- SEEK DRAGGING PROGRESS BAR (BISA DI-DRAG LINTAS LINE)
+-- SEEK DRAGGING PROGRESS BAR
 local isSeeking = false
 
 local function UpdateSeekPosition(input)
@@ -982,7 +1001,7 @@ ToggleBtn.MouseButton1Click:Connect(function()
 end)
 
 --------------------------------------------------------------------------------
--- 11. RENDER LOCAL PLAYLIST & DIALOG HAPUS
+-- 11. RENDER LOCAL PLAYLIST & DIALOG KONFIRMASI HAPUS
 --------------------------------------------------------------------------------
 local RenderLocalPlaylist
 local pendingDeleteIndex = nil
@@ -1039,7 +1058,6 @@ RenderLocalPlaylist = function()
             PlayLocalTrackIndex(idx)
         end)
         
-        -- BUKA MODAL KONFIRMASI SEBELUM HAPUS
         DeleteBtn.MouseButton1Click:Connect(function()
             pendingDeleteIndex = idx
             ConfirmOverlay.Visible = true
@@ -1047,7 +1065,6 @@ RenderLocalPlaylist = function()
     end
 end
 
--- LOGIKA MODAL KONFIRMASI HAPUS
 CancelBtn.MouseButton1Click:Connect(function()
     pendingDeleteIndex = nil
     ConfirmOverlay.Visible = false
@@ -1078,7 +1095,7 @@ PlayAllLocalBtn.MouseButton1Click:Connect(function()
         isPlaylistMode = true
         isShuffleMode = false
         PlayLocalTrackIndex(1)
-        PlayerStatusLabel.Text = "Status: 🟢 Memutar Seluruh Playlist Lokal"
+        PlayerStatusLabel.Text = "Status: 🟢 Memutar Playlist Lokal"
     end
 end)
 
@@ -1099,10 +1116,10 @@ ShuffleBtn.MouseButton1Click:Connect(function()
     ShuffleBtn.BackgroundColor3 = isShuffleMode and Color3.fromRGB(41, 158, 239) or Color3.fromRGB(40, 52, 75)
 end)
 
+-- DOWNLOAD LOGIKA: ISOLATED STATUS DI TAB PENCARIAN
 local function PlayAndSaveTrack(id, name)
-    TrackTitle.Text = "🎵 " .. name
-    PlayerStatusLabel.Text = "Status: ⏳ Mendownload dari YouTube..."
-    PlayBtn.Text = "⏳"
+    SearchStatusLabel.Text = "Status Pencarian: ⏳ Mendownload " .. name .. "..."
+    SearchStatusLabel.TextColor3 = Color3.fromRGB(255, 200, 80)
     isPlaylistMode = false
     
     task.spawn(function()
@@ -1117,7 +1134,7 @@ local function PlayAndSaveTrack(id, name)
         if res and res.Body then
             local success, data = pcall(function() return HttpService:JSONDecode(res.Body) end)
             if success and data and data.success and data.fileName then
-                PlayerStatusLabel.Text = "Status: 💾 Menyimpan file lokal..."
+                SearchStatusLabel.Text = "Status Pencarian: 💾 Menyimpan file lokal..."
                 local streamUrl = SERVER_URL .. "/stream/" .. data.fileName
                 local audioBinary = game:HttpGet(streamUrl)
                 
@@ -1134,20 +1151,25 @@ local function PlayAndSaveTrack(id, name)
                     RenderLocalPlaylist()
                 end
                 
+                TrackTitle.Text = "🎵 " .. name
                 local assetUrl = getcustomassetFn(safeLocalFileName)
                 CurrentSound:Stop()
+                CurrentSound.TimePosition = 0
                 CurrentSound.SoundId = assetUrl
                 task.wait(0.2)
                 CurrentSound:Play()
                 PlayBtn.Text = "⏸"
-                PlayerStatusLabel.Text = "Status: 🟢 Memutar Musik"
+                
+                PlayerStatusLabel.Text = "Status: 🟢 Memutar Musik Baru"
+                SearchStatusLabel.Text = "Status Pencarian: 🟢 Berhasil terdownload & disimpan!"
+                SearchStatusLabel.TextColor3 = Color3.fromRGB(80, 220, 120)
             else
-                PlayerStatusLabel.Text = "Status: ❌ Gagal memproses server"
-                PlayBtn.Text = "▶"
+                SearchStatusLabel.Text = "Status Pencarian: ❌ Gagal memproses server"
+                SearchStatusLabel.TextColor3 = Color3.fromRGB(240, 80, 80)
             end
         else
-            PlayerStatusLabel.Text = "Status: ❌ Koneksi server gagal"
-            PlayBtn.Text = "▶"
+            SearchStatusLabel.Text = "Status Pencarian: ❌ Koneksi server gagal"
+            SearchStatusLabel.TextColor3 = Color3.fromRGB(240, 80, 80)
         end
     end)
 end
@@ -1156,7 +1178,7 @@ local function ExecuteSearch()
     if SearchBox.Text == "" then return end
     
     ShowSkeletonLoading(SearchScroll)
-    SearchStatusLabel.Text = "Status: ⏳ Mencari lagu di YouTube..."
+    SearchStatusLabel.Text = "Status Pencarian: ⏳ Mencari lagu di YouTube..."
     SearchStatusLabel.TextColor3 = Color3.fromRGB(255, 200, 80)
     
     task.spawn(function()
@@ -1194,14 +1216,14 @@ local function ExecuteSearch()
                         PlayAndSaveTrack(song.id, song.title)
                     end)
                 end
-                SearchStatusLabel.Text = string.format("Status: 🟢 Ditemukan %d lagu", #data.results)
+                SearchStatusLabel.Text = string.format("Status Pencarian: 🟢 Ditemukan %d lagu", #data.results)
                 SearchStatusLabel.TextColor3 = Color3.fromRGB(80, 220, 120)
             else
-                SearchStatusLabel.Text = "Status: ⚠️ Lagu tidak ditemukan!"
+                SearchStatusLabel.Text = "Status Pencarian: ⚠️ Lagu tidak ditemukan!"
                 SearchStatusLabel.TextColor3 = Color3.fromRGB(240, 80, 80)
             end
         else
-            SearchStatusLabel.Text = "Status: ❌ Server tidak merespons!"
+            SearchStatusLabel.Text = "Status Pencarian: ❌ Server tidak merespons!"
             SearchStatusLabel.TextColor3 = Color3.fromRGB(240, 80, 80)
         end
     end)
@@ -1213,13 +1235,11 @@ SearchBox.FocusLost:Connect(ExecuteSearch)
 RenderLocalPlaylist()
 
 --------------------------------------------------------------------------------
--- 12. AUTO RESTORE PROTECTOR
+-- 12. CLEANUP SAAT DESTROY
 --------------------------------------------------------------------------------
-PlayerGui.ChildRemoved:Connect(function(child)
-    if child.Name == "NavySpotifyUI" then
-        task.wait(0.5)
-        if not PlayerGui:FindFirstChild("NavySpotifyUI") then
-            ScreenGui.Parent = PlayerGui
-        end
+ScreenGui.Destroying:Connect(function()
+    if CurrentSound then
+        CurrentSound:Stop()
+        CurrentSound:Destroy()
     end
 end)
