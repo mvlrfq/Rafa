@@ -1,5 +1,5 @@
 -- Spotify Navy Dashboard - Universal (Android & iOS)
--- Features: Resizable UI, Bounds Guard, Separate Status, Local Cached Songs (+Delete Button), Fixed Auto-Canvas Scroll
+-- Fixed Invisible Elements (ZIndex Issue Fix) & Full Stable Features
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -17,16 +17,16 @@ if PlayerGui:FindFirstChild("NavySpotifyUI") then
     PlayerGui.NavySpotifyUI:Destroy()
 end
 
---------------------------------------------------------------------------------
--- SCREEN GUI & MAIN FRAME (MAX Z-INDEX & PERSISTENT GUARD)
---------------------------------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "NavySpotifyUI"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.DisplayOrder = 999999999 -- Dipastikan selalu berada di paling depan
-ScreenGui.IgnoreGuiInset = true    -- Menembus batas topbar bawaan Roblox
+ScreenGui.DisplayOrder = 999999999 -- Mengatur tampilan terdepan di ScreenGui Level
+ScreenGui.IgnoreGuiInset = true
 ScreenGui.Parent = PlayerGui
 
+--------------------------------------------------------------------------------
+-- 2. MAIN FRAME (BOUNDS GUARD & RESIZABLE)
+--------------------------------------------------------------------------------
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 340, 0, 420)
 MainFrame.Position = UDim2.new(0.5, -170, 0.25, -210)
@@ -35,7 +35,6 @@ MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.ClipsDescendants = false
-MainFrame.ZIndex = 999 -- ZIndex tinggi agar tidak terhalang UI lain
 MainFrame.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
@@ -74,7 +73,7 @@ local MinCorner = Instance.new("UICorner")
 MinCorner.CornerRadius = UDim.new(1, 0)
 MinCorner.Parent = MinBtn
 
--- Floating Toggle Icon (Memiliki Screen Boundary Guard)
+-- Floating Toggle Icon
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0, 44, 0, 44)
 ToggleBtn.Position = UDim2.new(0, 12, 0.4, 0)
@@ -90,7 +89,7 @@ local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(1, 0)
 ToggleCorner.Parent = ToggleBtn
 
--- Resizing Handle (Tombol Tarik Ukuran UI)
+-- Resizing Handle
 local ResizeHandle = Instance.new("TextButton")
 ResizeHandle.Size = UDim2.new(0, 16, 0, 16)
 ResizeHandle.Position = UDim2.new(1, -16, 1, -16)
@@ -138,7 +137,6 @@ local SearchBtnCorner = Instance.new("UICorner")
 SearchBtnCorner.CornerRadius = UDim.new(0, 8)
 SearchBtnCorner.Parent = SearchBtn
 
--- Info Status Pencarian & Server (Berada di atas, terlihat jelas oleh user)
 local SearchStatusLabel = Instance.new("TextLabel")
 SearchStatusLabel.Size = UDim2.new(1, -24, 0, 16)
 SearchStatusLabel.Position = UDim2.new(0, 12, 0, 72)
@@ -168,7 +166,7 @@ MainScrollList.Padding = UDim.new(0, 8)
 MainScrollList.SortOrder = Enum.SortOrder.LayoutOrder
 MainScrollList.Parent = MainScroll
 
--- 4A. SECTION HASIL PENCARIAN YOUTUBE
+-- SECTION HASIL PENCARIAN YOUTUBE
 local SearchSectionHeader = Instance.new("TextLabel")
 SearchSectionHeader.Size = UDim2.new(1, 0, 0, 16)
 SearchSectionHeader.BackgroundTransparency = 1
@@ -191,7 +189,7 @@ local SearchResultList = Instance.new("UIListLayout")
 SearchResultList.Padding = UDim.new(0, 4)
 SearchResultList.Parent = SearchResultFrame
 
--- 4B. SECTION LAGU LOKAL TERSIMPAN
+-- SECTION LAGU LOKAL TERSIMPAN
 local LocalSectionHeader = Instance.new("TextLabel")
 LocalSectionHeader.Size = UDim2.new(1, 0, 0, 16)
 LocalSectionHeader.BackgroundTransparency = 1
@@ -389,7 +387,6 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- Boundary Guard agar UI tidak bisa digeser ke luar layar
 local function ClampToScreen(frame)
     local camera = workspace.CurrentCamera
     if not camera then return end
@@ -457,7 +454,6 @@ local function customRequest(reqData)
     return response
 end
 
--- Server Health Check Loop
 task.spawn(function()
     while task.wait(5) do
         local startTime = os.clock()
@@ -525,7 +521,6 @@ LoopBtn.MouseButton1Click:Connect(function()
     LoopBtn.BackgroundColor3 = CurrentSound.Looped and Color3.fromRGB(41, 158, 239) or Color3.fromRGB(40, 52, 75)
 end)
 
--- Volume Drag Function
 local settingVol = false
 VolBg.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -563,7 +558,7 @@ end)
 --------------------------------------------------------------------------------
 -- 9. LOGIKA TAMPILAN LAGU LOKAL TERSIMPAN & MENGHAPUS FILE
 --------------------------------------------------------------------------------
-local RenderLocalPlaylist -- forward declaration
+local RenderLocalPlaylist
 
 RenderLocalPlaylist = function()
     for _, child in pairs(LocalResultFrame:GetChildren()) do
@@ -613,7 +608,6 @@ RenderLocalPlaylist = function()
         DelCorner.CornerRadius = UDim.new(0, 4)
         DelCorner.Parent = DeleteBtn
         
-        -- Memutar lagu lokal tanpa perlu mendownload dari server
         PlayLocalBtn.MouseButton1Click:Connect(function()
             if isfileFn and isfileFn(item.fileName) then
                 TrackTitle.Text = "🎵 " .. item.title
@@ -632,7 +626,6 @@ RenderLocalPlaylist = function()
             end
         end)
         
-        -- Hapus lagu lokal
         DeleteBtn.MouseButton1Click:Connect(function()
             if delfileFn and isfileFn and isfileFn(item.fileName) then
                 pcall(function() delfileFn(item.fileName) end)
@@ -675,7 +668,6 @@ local function PlayAndSaveTrack(id, name)
                     writefileFn(safeLocalFileName, audioBinary)
                 end
                 
-                -- Simpan ke Playlist JSON lokal jika belum ada
                 local playlist = LoadLocalPlaylist()
                 local exists = false
                 for _, p in ipairs(playlist) do
@@ -768,16 +760,15 @@ end
 SearchBtn.MouseButton1Click:Connect(ExecuteSearch)
 SearchBox.FocusLost:Connect(ExecuteSearch)
 
--- Inisialisasi Tampilan Lagu Lokal saat pertama kali dimuat
+-- Inisialisasi Tampilan Lagu Lokal
 RenderLocalPlaylist()
 
 --------------------------------------------------------------------------------
--- PROTECTION AGAINST UI DESTRUCTION (LOADING SCREEN / TELEPORT AUTO-REPAIR)
+-- 11. AUTO RESTORE ON LOADING / TELEPORT
 --------------------------------------------------------------------------------
 PlayerGui.ChildRemoved:Connect(function(child)
     if child.Name == "NavySpotifyUI" then
         task.wait(0.5)
-        -- Jika UI terhapus oleh loading screen/game, re-parent kembali ScreenGui
         if not PlayerGui:FindFirstChild("NavySpotifyUI") then
             ScreenGui.Parent = PlayerGui
         end
