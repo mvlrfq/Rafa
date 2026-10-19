@@ -1,5 +1,5 @@
 -- Spotify Navy Dashboard - Universal (Android & iOS)
--- Features: Audio Resuming Fix, Skeleton Pulse Loading for Lists, Contextual Status Spinners
+-- Features: Fixed Volume Layout, Boundary Clamp Fix, Seek Dragging, Auto-Next/Shuffle Playlist, Next/Prev Buttons, Delete Confirmation Dialog
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -21,16 +21,16 @@ end
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "NavySpotifyUI"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.DisplayOrder = 999999999
+ScreenGui.DisplayOrder = 2147483647 -- Max DisplayOrder agar dipastikan paling depan
 ScreenGui.IgnoreGuiInset = true
 ScreenGui.Parent = PlayerGui
 
 --------------------------------------------------------------------------------
--- 2. MAIN FRAME (LANDSCAPE & NORMAL DRAGGABLE)
+-- 2. MAIN FRAME & HEADER
 --------------------------------------------------------------------------------
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 560, 0, 320)
-MainFrame.Position = UDim2.new(0.5, -280, 0.5, -160)
+MainFrame.Size = UDim2.new(0, 580, 0, 330)
+MainFrame.Position = UDim2.new(0.5, -290, 0.5, -165)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 20, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -39,7 +39,7 @@ MainFrame.ClipsDescendants = false
 MainFrame.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.CornerRadius = UDim.new(0, 10)
 MainCorner.Parent = MainFrame
 
 local MainStroke = Instance.new("UIStroke")
@@ -47,7 +47,6 @@ MainStroke.Color = Color3.fromRGB(40, 55, 80)
 MainStroke.Thickness = 1.5
 MainStroke.Parent = MainFrame
 
--- Header Bar
 local TopBar = Instance.new("Frame")
 TopBar.Size = UDim2.new(1, 0, 0, 32)
 TopBar.BackgroundTransparency = 1
@@ -93,10 +92,28 @@ local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(1, 0)
 ToggleCorner.Parent = ToggleBtn
 
+-- Resizing Handle
+local ResizeHandle = Instance.new("TextButton")
+ResizeHandle.Size = UDim2.new(0, 16, 0, 16)
+ResizeHandle.Position = UDim2.new(1, -16, 1, -16)
+ResizeHandle.BackgroundColor3 = Color3.fromRGB(41, 158, 239)
+ResizeHandle.Text = "↘"
+ResizeHandle.TextColor3 = Color3.fromRGB(255, 255, 255)
+ResizeHandle.TextSize = 10
+ResizeHandle.Font = Enum.Font.GothamBold
+ResizeHandle.Parent = MainFrame
+
+local ResizeCorner = Instance.new("UICorner")
+ResizeCorner.CornerRadius = UDim.new(0, 4)
+ResizeCorner.Parent = ResizeHandle
+
 --------------------------------------------------------------------------------
--- 3. BOUNDARY GUARD
+-- 3. PERBAIKAN BOUNDARY GUARD (ANTI MELONCAT KE ATAS)
 --------------------------------------------------------------------------------
-local function ClampToScreen(frame)
+local isClamping = false
+
+local function SafeClampToScreen(frame)
+    if isClamping then return end
     local camera = workspace.CurrentCamera
     if not camera then return end
     local viewport = camera.ViewportSize
@@ -104,20 +121,54 @@ local function ClampToScreen(frame)
     local absPos = frame.AbsolutePosition
     local absSize = frame.AbsoluteSize
     
-    local clampedX = math.clamp(absPos.X, 0, math.max(0, viewport.X - absSize.X))
-    local clampedY = math.clamp(absPos.Y, 0, math.max(0, viewport.Y - absSize.Y))
+    local minX, minY = 5, 5
+    local maxX = math.max(minX, viewport.X - absSize.X - 5)
+    local maxY = math.max(minY, viewport.Y - absSize.Y - 5)
     
-    if absPos.X ~= clampedX or absPos.Y ~= clampedY then
+    local clampedX = math.clamp(absPos.X, minX, maxX)
+    local clampedY = math.clamp(absPos.Y, minY, maxY)
+    
+    if math.abs(absPos.X - clampedX) > 2 or math.abs(absPos.Y - clampedY) > 2 then
+        isClamping = true
         frame.Position = UDim2.new(0, clampedX, 0, clampedY)
+        task.wait(0.05)
+        isClamping = false
     end
 end
 
 MainFrame:GetPropertyChangedSignal("Position"):Connect(function()
-    ClampToScreen(MainFrame)
+    SafeClampToScreen(MainFrame)
 end)
 
 ToggleBtn:GetPropertyChangedSignal("Position"):Connect(function()
-    ClampToScreen(ToggleBtn)
+    SafeClampToScreen(ToggleBtn)
+end)
+
+-- Resizing Logic
+local isResizing = false
+local startSize, startMousePos
+
+ResizeHandle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        isResizing = true
+        startSize = MainFrame.Size
+        startMousePos = input.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if isResizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - startMousePos
+        local newWidth = math.clamp(startSize.X.Offset + delta.X, 480, 850)
+        local newHeight = math.clamp(startSize.Y.Offset + delta.Y, 280, 550)
+        MainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        isResizing = false
+    end
 end)
 
 --------------------------------------------------------------------------------
@@ -204,7 +255,7 @@ ServerPingLabel.TextWrapped = true
 ServerPingLabel.Parent = PingWidget
 
 --------------------------------------------------------------------------------
--- 5. KONTEN UTAMA KANAN (TAB PENCARIAN & LAGU LOKAL)
+-- 5. KONTEN UTAMA KANAN
 --------------------------------------------------------------------------------
 local ContentArea = Instance.new("Frame")
 ContentArea.Size = UDim2.new(1, -170, 1, -40)
@@ -212,9 +263,9 @@ ContentArea.Position = UDim2.new(0, 164, 0, 34)
 ContentArea.BackgroundTransparency = 1
 ContentArea.Parent = MainFrame
 
--- TAB 1: PENCARIAN YOUTUBE
+-- TAB 1: SEARCH YOUTUBE
 local SearchView = Instance.new("Frame")
-SearchView.Size = UDim2.new(1, 0, 1, -85)
+SearchView.Size = UDim2.new(1, 0, 1, -95)
 SearchView.BackgroundTransparency = 1
 SearchView.Visible = true
 SearchView.Parent = ContentArea
@@ -273,26 +324,59 @@ local SearchScrollList = Instance.new("UIListLayout")
 SearchScrollList.Padding = UDim.new(0, 4)
 SearchScrollList.Parent = SearchScroll
 
--- TAB 2: LAGU LOKAL TERSIMPAN
+-- TAB 2: LOCAL PLAYLIST
 local LocalView = Instance.new("Frame")
-LocalView.Size = UDim2.new(1, 0, 1, -85)
+LocalView.Size = UDim2.new(1, 0, 1, -95)
 LocalView.BackgroundTransparency = 1
 LocalView.Visible = false
 LocalView.Parent = ContentArea
 
+local LocalActionBar = Instance.new("Frame")
+LocalActionBar.Size = UDim2.new(1, 0, 0, 26)
+LocalActionBar.BackgroundTransparency = 1
+LocalActionBar.Parent = LocalView
+
 local LocalTitle = Instance.new("TextLabel")
-LocalTitle.Size = UDim2.new(1, 0, 0, 20)
+LocalTitle.Size = UDim2.new(1, -125, 1, 0)
 LocalTitle.BackgroundTransparency = 1
-LocalTitle.Text = "💾 Playlist Tersimpan di Perangkat:"
+LocalTitle.Text = "💾 Playlist Lokal:"
 LocalTitle.TextColor3 = Color3.fromRGB(80, 220, 120)
-LocalTitle.TextSize = 11
+LocalTitle.TextSize = 10
 LocalTitle.Font = Enum.Font.GothamBold
 LocalTitle.TextXAlignment = Enum.TextXAlignment.Left
-LocalTitle.Parent = LocalView
+LocalTitle.Parent = LocalActionBar
+
+local PlayAllLocalBtn = Instance.new("TextButton")
+PlayAllLocalBtn.Size = UDim2.new(0, 58, 1, 0)
+PlayAllLocalBtn.Position = UDim2.new(1, -120, 0, 0)
+PlayAllLocalBtn.BackgroundColor3 = Color3.fromRGB(41, 158, 239)
+PlayAllLocalBtn.Text = "▶ Semua"
+PlayAllLocalBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+PlayAllLocalBtn.TextSize = 9
+PlayAllLocalBtn.Font = Enum.Font.GothamBold
+PlayAllLocalBtn.Parent = LocalActionBar
+
+local PlayAllCorner = Instance.new("UICorner")
+PlayAllCorner.CornerRadius = UDim.new(0, 5)
+PlayAllCorner.Parent = PlayAllLocalBtn
+
+local ShuffleLocalBtn = Instance.new("TextButton")
+ShuffleLocalBtn.Size = UDim2.new(0, 58, 1, 0)
+ShuffleLocalBtn.Position = UDim2.new(1, -58, 0, 0)
+ShuffleLocalBtn.BackgroundColor3 = Color3.fromRGB(60, 70, 95)
+ShuffleLocalBtn.Text = "🔀 Acak"
+ShuffleLocalBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ShuffleLocalBtn.TextSize = 9
+ShuffleLocalBtn.Font = Enum.Font.GothamBold
+ShuffleLocalBtn.Parent = LocalActionBar
+
+local ShuffleCorner = Instance.new("UICorner")
+ShuffleCorner.CornerRadius = UDim.new(0, 5)
+ShuffleCorner.Parent = ShuffleLocalBtn
 
 local LocalScroll = Instance.new("ScrollingFrame")
-LocalScroll.Size = UDim2.new(1, 0, 1, -24)
-LocalScroll.Position = UDim2.new(0, 0, 0, 24)
+LocalScroll.Size = UDim2.new(1, 0, 1, -30)
+LocalScroll.Position = UDim2.new(0, 0, 0, 30)
 LocalScroll.BackgroundTransparency = 1
 LocalScroll.BorderSizePixel = 0
 LocalScroll.ScrollBarThickness = 3
@@ -305,11 +389,11 @@ LocalScrollList.Padding = UDim.new(0, 4)
 LocalScrollList.Parent = LocalScroll
 
 --------------------------------------------------------------------------------
--- 6. ACTIVE PLAYER PANEL
+-- 6. ACTIVE PLAYER PANEL DENGAN TATA LETAK RAPI (FIX VOLUME OVERLAP)
 --------------------------------------------------------------------------------
 local PlayerBar = Instance.new("Frame")
-PlayerBar.Size = UDim2.new(1, 0, 0, 75)
-PlayerBar.Position = UDim2.new(0, 0, 1, -75)
+PlayerBar.Size = UDim2.new(1, 0, 0, 85)
+PlayerBar.Position = UDim2.new(0, 0, 1, -85)
 PlayerBar.BackgroundColor3 = Color3.fromRGB(22, 30, 46)
 PlayerBar.Parent = ContentArea
 
@@ -318,7 +402,7 @@ PlayerCorner.CornerRadius = UDim.new(0, 8)
 PlayerCorner.Parent = PlayerBar
 
 local TrackTitle = Instance.new("TextLabel")
-TrackTitle.Size = UDim2.new(1, -10, 0, 16)
+TrackTitle.Size = UDim2.new(1, -12, 0, 16)
 TrackTitle.Position = UDim2.new(0, 6, 0, 4)
 TrackTitle.BackgroundTransparency = 1
 TrackTitle.Text = "Belum ada lagu diputar"
@@ -330,7 +414,7 @@ TrackTitle.TextXAlignment = Enum.TextXAlignment.Left
 TrackTitle.Parent = PlayerBar
 
 local PlayerStatusLabel = Instance.new("TextLabel")
-PlayerStatusLabel.Size = UDim2.new(1, -10, 0, 12)
+PlayerStatusLabel.Size = UDim2.new(1, -12, 0, 12)
 PlayerStatusLabel.Position = UDim2.new(0, 6, 0, 20)
 PlayerStatusLabel.BackgroundTransparency = 1
 PlayerStatusLabel.Text = "Status: Standby"
@@ -340,12 +424,18 @@ PlayerStatusLabel.Font = Enum.Font.Gotham
 PlayerStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 PlayerStatusLabel.Parent = PlayerBar
 
-local ProgressBg = Instance.new("Frame")
-ProgressBg.Size = UDim2.new(1, -12, 0, 4)
+-- Seekable Progress Bar (Interactive Line)
+local ProgressBg = Instance.new("TextButton")
+ProgressBg.Size = UDim2.new(1, -12, 0, 6)
 ProgressBg.Position = UDim2.new(0, 6, 0, 36)
 ProgressBg.BackgroundColor3 = Color3.fromRGB(35, 48, 70)
-ProgressBg.BorderSizePixel = 0
+ProgressBg.Text = ""
+ProgressBg.AutoButtonColor = false
 ProgressBg.Parent = PlayerBar
+
+local ProgressBgCorner = Instance.new("UICorner")
+ProgressBgCorner.CornerRadius = UDim.new(1, 0)
+ProgressBgCorner.Parent = ProgressBg
 
 local ProgressFill = Instance.new("Frame")
 ProgressFill.Size = UDim2.new(0, 0, 1, 0)
@@ -353,20 +443,28 @@ ProgressFill.BackgroundColor3 = Color3.fromRGB(41, 158, 239)
 ProgressFill.BorderSizePixel = 0
 ProgressFill.Parent = ProgressBg
 
-local TimeLabel = Instance.new("TextLabel")
-TimeLabel.Size = UDim2.new(1, -10, 0, 10)
-TimeLabel.Position = UDim2.new(0, 6, 0, 42)
-TimeLabel.BackgroundTransparency = 1
-TimeLabel.Text = "00:00 / 00:00"
-TimeLabel.TextColor3 = Color3.fromRGB(150, 170, 200)
-TimeLabel.TextSize = 8
-TimeLabel.Font = Enum.Font.Gotham
-TimeLabel.TextXAlignment = Enum.TextXAlignment.Right
-TimeLabel.Parent = PlayerBar
+local ProgressFillCorner = Instance.new("UICorner")
+ProgressFillCorner.CornerRadius = UDim.new(1, 0)
+ProgressFillCorner.Parent = ProgressFill
+
+-- Row Kontrol & Volume (Dirapikan Total agar Tidak Menutup Satu Sama Lain)
+local PrevBtn = Instance.new("TextButton")
+PrevBtn.Size = UDim2.new(0, 24, 0, 24)
+PrevBtn.Position = UDim2.new(0, 6, 0, 52)
+PrevBtn.BackgroundColor3 = Color3.fromRGB(40, 52, 75)
+PrevBtn.Text = "⏮"
+PrevBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+PrevBtn.TextSize = 10
+PrevBtn.Font = Enum.Font.GothamBold
+PrevBtn.Parent = PlayerBar
+
+local PrevCorner = Instance.new("UICorner")
+PrevCorner.CornerRadius = UDim.new(0, 5)
+PrevCorner.Parent = PrevBtn
 
 local PlayBtn = Instance.new("TextButton")
 PlayBtn.Size = UDim2.new(0, 26, 0, 24)
-PlayBtn.Position = UDim2.new(0, 6, 0, 46)
+PlayBtn.Position = UDim2.new(0, 34, 0, 52)
 PlayBtn.BackgroundColor3 = Color3.fromRGB(41, 158, 239)
 PlayBtn.Text = "▶"
 PlayBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -374,9 +472,27 @@ PlayBtn.TextSize = 10
 PlayBtn.Font = Enum.Font.GothamBold
 PlayBtn.Parent = PlayerBar
 
+local PlayCorner = Instance.new("UICorner")
+PlayCorner.CornerRadius = UDim.new(0, 5)
+PlayCorner.Parent = PlayBtn
+
+local NextBtn = Instance.new("TextButton")
+NextBtn.Size = UDim2.new(0, 24, 0, 24)
+NextBtn.Position = UDim2.new(0, 64, 0, 52)
+NextBtn.BackgroundColor3 = Color3.fromRGB(40, 52, 75)
+NextBtn.Text = "⏭"
+NextBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+NextBtn.TextSize = 10
+NextBtn.Font = Enum.Font.GothamBold
+NextBtn.Parent = PlayerBar
+
+local NextCorner = Instance.new("UICorner")
+NextCorner.CornerRadius = UDim.new(0, 5)
+NextCorner.Parent = NextBtn
+
 local StopBtn = Instance.new("TextButton")
-StopBtn.Size = UDim2.new(0, 26, 0, 24)
-StopBtn.Position = UDim2.new(0, 36, 0, 46)
+StopBtn.Size = UDim2.new(0, 24, 0, 24)
+StopBtn.Position = UDim2.new(0, 92, 0, 52)
 StopBtn.BackgroundColor3 = Color3.fromRGB(40, 52, 75)
 StopBtn.Text = "◼"
 StopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -384,9 +500,13 @@ StopBtn.TextSize = 9
 StopBtn.Font = Enum.Font.GothamBold
 StopBtn.Parent = PlayerBar
 
+local StopCorner = Instance.new("UICorner")
+StopCorner.CornerRadius = UDim.new(0, 5)
+StopCorner.Parent = StopBtn
+
 local LoopBtn = Instance.new("TextButton")
-LoopBtn.Size = UDim2.new(0, 26, 0, 24)
-LoopBtn.Position = UDim2.new(0, 66, 0, 46)
+LoopBtn.Size = UDim2.new(0, 24, 0, 24)
+LoopBtn.Position = UDim2.new(0, 120, 0, 52)
 LoopBtn.BackgroundColor3 = Color3.fromRGB(40, 52, 75)
 LoopBtn.Text = "🔁"
 LoopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -394,21 +514,148 @@ LoopBtn.TextSize = 10
 LoopBtn.Font = Enum.Font.GothamBold
 LoopBtn.Parent = PlayerBar
 
+local LoopCorner = Instance.new("UICorner")
+LoopCorner.CornerRadius = UDim.new(0, 5)
+LoopCorner.Parent = LoopBtn
+
+local ShuffleBtn = Instance.new("TextButton")
+ShuffleBtn.Size = UDim2.new(0, 24, 0, 24)
+ShuffleBtn.Position = UDim2.new(0, 148, 0, 52)
+ShuffleBtn.BackgroundColor3 = Color3.fromRGB(40, 52, 75)
+ShuffleBtn.Text = "🔀"
+ShuffleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ShuffleBtn.TextSize = 10
+ShuffleBtn.Font = Enum.Font.GothamBold
+ShuffleBtn.Parent = PlayerBar
+
+local ShuffleCorner = Instance.new("UICorner")
+ShuffleCorner.CornerRadius = UDim.new(0, 5)
+ShuffleCorner.Parent = ShuffleBtn
+
+-- Time Label
+local TimeLabel = Instance.new("TextLabel")
+TimeLabel.Size = UDim2.new(0, 75, 0, 12)
+TimeLabel.Position = UDim2.new(1, -210, 0, 48)
+TimeLabel.BackgroundTransparency = 1
+TimeLabel.Text = "00:00/00:00"
+TimeLabel.TextColor3 = Color3.fromRGB(150, 170, 200)
+TimeLabel.TextSize = 8
+TimeLabel.Font = Enum.Font.Gotham
+TimeLabel.TextXAlignment = Enum.TextXAlignment.Right
+TimeLabel.Parent = PlayerBar
+
+-- Volume Section Rapi di Sebelah Kanan
+local VolIcon = Instance.new("TextLabel")
+VolIcon.Size = UDim2.new(0, 14, 0, 24)
+VolIcon.Position = UDim2.new(1, -128, 0, 52)
+VolIcon.BackgroundTransparency = 1
+VolIcon.Text = "🔊"
+VolIcon.TextSize = 10
+VolIcon.Parent = PlayerBar
+
 local VolBg = Instance.new("TextButton")
 VolBg.Size = UDim2.new(0, 70, 0, 5)
-VolBg.Position = UDim2.new(1, -76, 0, 58)
+VolBg.Position = UDim2.new(1, -110, 0, 61)
 VolBg.BackgroundColor3 = Color3.fromRGB(35, 48, 70)
 VolBg.Text = ""
 VolBg.Parent = PlayerBar
 
+local VolBgCorner = Instance.new("UICorner")
+VolBgCorner.CornerRadius = UDim.new(1, 0)
+VolBgCorner.Parent = VolBg
+
 local VolFill = Instance.new("Frame")
-VolFill.Size = UDim2.new(1, 0, 1, 0)
+VolFill.Size = UDim2.new(0.5, 0, 1, 0)
 VolFill.BackgroundColor3 = Color3.fromRGB(41, 158, 239)
 VolFill.BorderSizePixel = 0
 VolFill.Parent = VolBg
 
+local VolInputBox = Instance.new("TextBox")
+VolInputBox.Size = UDim2.new(0, 32, 0, 20)
+VolInputBox.Position = UDim2.new(1, -36, 0, 54)
+VolInputBox.BackgroundColor3 = Color3.fromRGB(28, 38, 56)
+VolInputBox.Text = "100"
+VolInputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+VolInputBox.TextSize = 9
+VolInputBox.Font = Enum.Font.GothamBold
+VolInputBox.Parent = PlayerBar
+
+local VolInputCorner = Instance.new("UICorner")
+VolInputCorner.CornerRadius = UDim.new(0, 4)
+VolInputCorner.Parent = VolInputBox
+
 --------------------------------------------------------------------------------
--- 7. ANIMASI LOADING & SKELETON PULSE
+-- 7. DIALOG KONFIRMASI HAPUS PERMANEN (MODAL DIALOG)
+--------------------------------------------------------------------------------
+local ConfirmOverlay = Instance.new("Frame")
+ConfirmOverlay.Size = UDim2.new(1, 0, 1, 0)
+ConfirmOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+ConfirmOverlay.BackgroundTransparency = 0.6
+ConfirmOverlay.Visible = false
+ConfirmOverlay.ZIndex = 1000
+ConfirmOverlay.Parent = MainFrame
+
+local ConfirmModal = Instance.new("Frame")
+ConfirmModal.Size = UDim2.new(0, 260, 0, 120)
+ConfirmModal.Position = UDim2.new(0.5, -130, 0.5, -60)
+ConfirmModal.BackgroundColor3 = Color3.fromRGB(20, 28, 42)
+ConfirmModal.Parent = ConfirmOverlay
+
+local ConfirmCorner = Instance.new("UICorner")
+ConfirmCorner.CornerRadius = UDim.new(0, 8)
+ConfirmCorner.Parent = ConfirmModal
+
+local ConfirmTitle = Instance.new("TextLabel")
+ConfirmTitle.Size = UDim2.new(1, -20, 0, 20)
+ConfirmTitle.Position = UDim2.new(0, 10, 0, 10)
+ConfirmTitle.BackgroundTransparency = 1
+ConfirmTitle.Text = "⚠️ Konfirmasi Hapus"
+ConfirmTitle.TextColor3 = Color3.fromRGB(255, 100, 100)
+ConfirmTitle.TextSize = 11
+ConfirmTitle.Font = Enum.Font.GothamBold
+ConfirmTitle.Parent = ConfirmModal
+
+local ConfirmDesc = Instance.new("TextLabel")
+ConfirmDesc.Size = UDim2.new(1, -20, 0, 36)
+ConfirmDesc.Position = UDim2.new(0, 10, 0, 32)
+ConfirmDesc.BackgroundTransparency = 1
+ConfirmDesc.Text = "Apakah Anda yakin ingin menghapus lagu ini secara permanen dari perangkat?"
+ConfirmDesc.TextColor3 = Color3.fromRGB(200, 210, 230)
+ConfirmDesc.TextSize = 9
+ConfirmDesc.Font = Enum.Font.Gotham
+ConfirmDesc.TextWrapped = true
+ConfirmDesc.Parent = ConfirmModal
+
+local CancelBtn = Instance.new("TextButton")
+CancelBtn.Size = UDim2.new(0, 100, 0, 26)
+CancelBtn.Position = UDim2.new(0, 20, 1, -34)
+CancelBtn.BackgroundColor3 = Color3.fromRGB(40, 52, 75)
+CancelBtn.Text = "Batal"
+CancelBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CancelBtn.TextSize = 10
+CancelBtn.Font = Enum.Font.GothamBold
+CancelBtn.Parent = ConfirmModal
+
+local CancelCorner = Instance.new("UICorner")
+CancelCorner.CornerRadius = UDim.new(0, 5)
+CancelCorner.Parent = CancelBtn
+
+local ConfirmDeleteBtn = Instance.new("TextButton")
+ConfirmDeleteBtn.Size = UDim2.new(0, 100, 0, 26)
+ConfirmDeleteBtn.Position = UDim2.new(1, -120, 1, -34)
+ConfirmDeleteBtn.BackgroundColor3 = Color3.fromRGB(190, 40, 50)
+ConfirmDeleteBtn.Text = "Hapus"
+ConfirmDeleteBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ConfirmDeleteBtn.TextSize = 10
+ConfirmDeleteBtn.Font = Enum.Font.GothamBold
+ConfirmDeleteBtn.Parent = ConfirmModal
+
+local ConfirmDelCorner = Instance.new("UICorner")
+ConfirmDelCorner.CornerRadius = UDim.new(0, 5)
+ConfirmDelCorner.Parent = ConfirmDeleteBtn
+
+--------------------------------------------------------------------------------
+-- 8. ANIMASI SKELETON PULSE
 --------------------------------------------------------------------------------
 local activeSkeletonTweens = {}
 
@@ -416,7 +663,6 @@ local function ShowSkeletonLoading(container)
     for _, child in pairs(container:GetChildren()) do
         if child:IsA("Frame") then child:Destroy() end
     end
-    
     activeSkeletonTweens = {}
     
     for i = 1, 4 do
@@ -449,20 +695,15 @@ local function ShowSkeletonLoading(container)
 end
 
 local function ClearSkeletonLoading(container)
-    for _, tween in ipairs(activeSkeletonTweens) do
-        tween:Cancel()
-    end
+    for _, tween in ipairs(activeSkeletonTweens) do tween:Cancel() end
     activeSkeletonTweens = {}
-    
     for _, child in pairs(container:GetChildren()) do
-        if child.Name == "SkeletonCard" then
-            child:Destroy()
-        end
+        if child.Name == "SkeletonCard" then child:Destroy() end
     end
 end
 
 --------------------------------------------------------------------------------
--- 8. TAB NAVIGATION LOGIC
+-- 9. TAB NAVIGATION
 --------------------------------------------------------------------------------
 TabSearchBtn.MouseButton1Click:Connect(function()
     SearchView.Visible = true
@@ -483,13 +724,17 @@ TabLocalBtn.MouseButton1Click:Connect(function()
 end)
 
 --------------------------------------------------------------------------------
--- 9. AUDIO ENGINE & RESUMING LOGIC FIX
+-- 10. LOGIKA AUDIO, PLAYLIST AUTO-NEXT & SEEK DRAGGING
 --------------------------------------------------------------------------------
 local writefileFn = writefile or (syn and syn.writefile)
 local readfileFn = readfile or (syn and syn.readfile)
 local isfileFn = isfile or (syn and syn.isfile)
 local delfileFn = delfile or (syn and syn.delfile)
 local getcustomassetFn = getcustomasset or getsynasset or (syn and syn.getcustomasset)
+
+local currentLocalIndex = 1
+local isPlaylistMode = false
+local isShuffleMode = false
 
 local function LoadLocalPlaylist()
     if isfileFn and isfileFn(LOCAL_JSON_FILE) then
@@ -518,7 +763,7 @@ local function customRequest(reqData)
     return response
 end
 
--- Server Ping Loop
+-- Ping Loop
 task.spawn(function()
     while task.wait(5) do
         local startTime = os.clock()
@@ -549,27 +794,66 @@ RunService.RenderStepped:Connect(function()
         ProgressFill.Size = UDim2.new(alpha, 0, 1, 0)
         local m1, s1 = math.floor(CurrentSound.TimePosition / 60), math.floor(CurrentSound.TimePosition % 60)
         local m2, s2 = math.floor(CurrentSound.TimeLength / 60), math.floor(CurrentSound.TimeLength % 60)
-        TimeLabel.Text = string.format("%02d:%02d / %02d:%02d", m1, s1, m2, s2)
+        TimeLabel.Text = string.format("%02d:%02d/%02d:%02d", m1, s1, m2, s2)
     elseif not CurrentSound.IsPlaying and CurrentSound.TimePosition == 0 then
         ProgressFill.Size = UDim2.new(0, 0, 1, 0)
     end
 end)
 
--- FIX RESUME AUDIO (Melanjutkan dari posisi terhenti)
+local PlayLocalTrackIndex -- forward decl
+
+-- AUTO-NEXT TRAK KETIKA LAGU SELESAI
+CurrentSound.Ended:Connect(function()
+    if isPlaylistMode then
+        local playlist = LoadLocalPlaylist()
+        if #playlist > 0 then
+            if isShuffleMode then
+                currentLocalIndex = math.random(1, #playlist)
+            else
+                currentLocalIndex = currentLocalIndex + 1
+                if currentLocalIndex > #playlist then currentLocalIndex = 1 end
+            end
+            PlayLocalTrackIndex(currentLocalIndex)
+        end
+    end
+end)
+
+PlayLocalTrackIndex = function(index)
+    local playlist = LoadLocalPlaylist()
+    if #playlist > 0 and playlist[index] then
+        currentLocalIndex = index
+        local item = playlist[index]
+        if isfileFn and isfileFn(item.fileName) then
+            TrackTitle.Text = "🎵 " .. item.title
+            PlayerStatusLabel.Text = "Status: 📂 Memuat file lokal..."
+            local assetUrl = getcustomassetFn(item.fileName)
+            CurrentSound:Stop()
+            CurrentSound.SoundId = assetUrl
+            task.wait(0.1)
+            CurrentSound:Play()
+            PlayBtn.Text = "⏸"
+            PlayerStatusLabel.Text = "Status: 🟢 Memutar dari Penyimpanan Lokal"
+        else
+            PlayerStatusLabel.Text = "Status: ❌ File lokal hilang!"
+        end
+    end
+end
+
+-- Play/Pause Resume Logic
 PlayBtn.MouseButton1Click:Connect(function()
     if CurrentSound.SoundId ~= "" then
         if CurrentSound.IsPlaying then
-            CurrentSound:Pause() -- Menghentikan sementara di detik posisi saat ini
+            CurrentSound:Pause()
             PlayBtn.Text = "▶"
-            PlayerStatusLabel.Text = "Status: Diberhentikan (Paused)"
+            PlayerStatusLabel.Text = "Status: Paused"
         else
             if CurrentSound.IsPaused then
-                CurrentSound:Resume() -- Melanjutkan dari detik posisi terhenti (Tanpa terulang)
+                CurrentSound:Resume()
             else
                 CurrentSound:Play()
             end
             PlayBtn.Text = "⏸"
-            PlayerStatusLabel.Text = "Status: Memutar Musik..."
+            PlayerStatusLabel.Text = "Status: Playing"
         end
     end
 end)
@@ -579,7 +863,30 @@ StopBtn.MouseButton1Click:Connect(function()
     CurrentSound.TimePosition = 0
     PlayBtn.Text = "▶"
     ProgressFill.Size = UDim2.new(0, 0, 1, 0)
-    PlayerStatusLabel.Text = "Status: Dihentikan (Stopped)"
+    PlayerStatusLabel.Text = "Status: Stopped"
+end)
+
+NextBtn.MouseButton1Click:Connect(function()
+    local playlist = LoadLocalPlaylist()
+    if #playlist > 0 then
+        isPlaylistMode = true
+        if isShuffleMode then
+            currentLocalIndex = math.random(1, #playlist)
+        else
+            currentLocalIndex = (currentLocalIndex % #playlist) + 1
+        end
+        PlayLocalTrackIndex(currentLocalIndex)
+    end
+end)
+
+PrevBtn.MouseButton1Click:Connect(function()
+    local playlist = LoadLocalPlaylist()
+    if #playlist > 0 then
+        isPlaylistMode = true
+        currentLocalIndex = currentLocalIndex - 1
+        if currentLocalIndex < 1 then currentLocalIndex = #playlist end
+        PlayLocalTrackIndex(currentLocalIndex)
+    end
 end)
 
 LoopBtn.MouseButton1Click:Connect(function()
@@ -587,25 +894,80 @@ LoopBtn.MouseButton1Click:Connect(function()
     LoopBtn.BackgroundColor3 = CurrentSound.Looped and Color3.fromRGB(41, 158, 239) or Color3.fromRGB(40, 52, 75)
 end)
 
+-- SEEK DRAGGING PROGRESS BAR (BISA DI-DRAG LINTAS LINE)
+local isSeeking = false
+
+local function UpdateSeekPosition(input)
+    if CurrentSound.TimeLength > 0 then
+        local absPos = ProgressBg.AbsolutePosition.X
+        local absSize = ProgressBg.AbsoluteSize.X
+        local clickX = input.Position.X
+        local alpha = math.clamp((clickX - absPos) / absSize, 0, 1)
+        CurrentSound.TimePosition = alpha * CurrentSound.TimeLength
+        ProgressFill.Size = UDim2.new(alpha, 0, 1, 0)
+    end
+end
+
+ProgressBg.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        isSeeking = true
+        UpdateSeekPosition(input)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if isSeeking and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        UpdateSeekPosition(input)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        isSeeking = false
+    end
+end)
+
+-- Volume Dragging
 local settingVol = false
+
+local function UpdateVol(input)
+    local alpha = math.clamp((input.Position.X - VolBg.AbsolutePosition.X) / VolBg.AbsoluteSize.X, 0, 1)
+    VolFill.Size = UDim2.new(alpha, 0, 1, 0)
+    local volVal = alpha * 2
+    CurrentSound.Volume = volVal
+    VolInputBox.Text = tostring(math.floor(volVal * 100))
+end
+
 VolBg.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         settingVol = true
-        local alpha = math.clamp((input.Position.X - VolBg.AbsolutePosition.X) / VolBg.AbsoluteSize.X, 0, 1)
-        VolFill.Size = UDim2.new(alpha, 0, 1, 0)
-        CurrentSound.Volume = alpha * 2
+        UpdateVol(input)
     end
 end)
+
 UserInputService.InputChanged:Connect(function(input)
     if settingVol and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local alpha = math.clamp((input.Position.X - VolBg.AbsolutePosition.X) / VolBg.AbsoluteSize.X, 0, 1)
-        VolFill.Size = UDim2.new(alpha, 0, 1, 0)
-        CurrentSound.Volume = alpha * 2
+        UpdateVol(input)
     end
 end)
+
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         settingVol = false
+    end
+end)
+
+-- Volume Input Manual (%)
+VolInputBox.FocusLost:Connect(function()
+    local num = tonumber(VolInputBox.Text)
+    if num then
+        num = math.clamp(num, 0, 200)
+        local volVal = num / 100
+        CurrentSound.Volume = volVal
+        VolFill.Size = UDim2.new(math.clamp(volVal / 2, 0, 1), 0, 1, 0)
+        VolInputBox.Text = tostring(math.floor(num))
+    else
+        VolInputBox.Text = tostring(math.floor(CurrentSound.Volume * 100))
     end
 end)
 
@@ -613,15 +975,17 @@ MinBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
     ToggleBtn.Visible = true
 end)
+
 ToggleBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = true
     ToggleBtn.Visible = false
 end)
 
 --------------------------------------------------------------------------------
--- 10. RENDER PLAYLIST & DOWNLOAD
+-- 11. RENDER LOCAL PLAYLIST & DIALOG HAPUS
 --------------------------------------------------------------------------------
 local RenderLocalPlaylist
+local pendingDeleteIndex = nil
 
 RenderLocalPlaylist = function()
     for _, child in pairs(LocalScroll:GetChildren()) do
@@ -634,7 +998,7 @@ RenderLocalPlaylist = function()
         return
     end
     
-    LocalTitle.Text = string.format("💾 Playlist Lokal (%d lagu tersimpan):", #playlist)
+    LocalTitle.Text = string.format("💾 Playlist (%d lagu):", #playlist)
     
     for idx, item in ipairs(playlist) do
         local Card = Instance.new("Frame")
@@ -671,37 +1035,75 @@ RenderLocalPlaylist = function()
         DelCorner.Parent = DeleteBtn
         
         PlayLocalBtn.MouseButton1Click:Connect(function()
-            if isfileFn and isfileFn(item.fileName) then
-                TrackTitle.Text = "🎵 " .. item.title
-                PlayerStatusLabel.Text = "Status: 📂 Memuat file lokal..."
-                local assetUrl = getcustomassetFn(item.fileName)
-                CurrentSound:Stop()
-                CurrentSound.SoundId = assetUrl
-                task.wait(0.1)
-                CurrentSound:Play()
-                PlayBtn.Text = "⏸"
-                PlayerStatusLabel.Text = "Status: 🟢 Memutar dari Penyimpanan Lokal"
-            else
-                PlayerStatusLabel.Text = "Status: ❌ File lokal tidak ditemukan!"
-            end
+            isPlaylistMode = false
+            PlayLocalTrackIndex(idx)
         end)
         
+        -- BUKA MODAL KONFIRMASI SEBELUM HAPUS
         DeleteBtn.MouseButton1Click:Connect(function()
-            if delfileFn and isfileFn and isfileFn(item.fileName) then
-                pcall(function() delfileFn(item.fileName) end)
-            end
-            table.remove(playlist, idx)
-            SaveLocalPlaylist(playlist)
-            RenderLocalPlaylist()
-            PlayerStatusLabel.Text = "Status: 🗑️ Lagu lokal dihapus"
+            pendingDeleteIndex = idx
+            ConfirmOverlay.Visible = true
         end)
     end
 end
+
+-- LOGIKA MODAL KONFIRMASI HAPUS
+CancelBtn.MouseButton1Click:Connect(function()
+    pendingDeleteIndex = nil
+    ConfirmOverlay.Visible = false
+end)
+
+ConfirmDeleteBtn.MouseButton1Click:Connect(function()
+    if pendingDeleteIndex then
+        local playlist = LoadLocalPlaylist()
+        local item = playlist[pendingDeleteIndex]
+        if item then
+            if delfileFn and isfileFn and isfileFn(item.fileName) then
+                pcall(function() delfileFn(item.fileName) end)
+            end
+            table.remove(playlist, pendingDeleteIndex)
+            SaveLocalPlaylist(playlist)
+            RenderLocalPlaylist()
+            PlayerStatusLabel.Text = "Status: 🗑️ Lagu dihapus dari lokal"
+        end
+        pendingDeleteIndex = nil
+    end
+    ConfirmOverlay.Visible = false
+end)
+
+-- Play All
+PlayAllLocalBtn.MouseButton1Click:Connect(function()
+    local playlist = LoadLocalPlaylist()
+    if #playlist > 0 then
+        isPlaylistMode = true
+        isShuffleMode = false
+        PlayLocalTrackIndex(1)
+        PlayerStatusLabel.Text = "Status: 🟢 Memutar Seluruh Playlist Lokal"
+    end
+end)
+
+-- Shuffle Local
+ShuffleLocalBtn.MouseButton1Click:Connect(function()
+    local playlist = LoadLocalPlaylist()
+    if #playlist > 0 then
+        isPlaylistMode = true
+        isShuffleMode = true
+        local randIndex = math.random(1, #playlist)
+        PlayLocalTrackIndex(randIndex)
+        PlayerStatusLabel.Text = "Status: 🔀 Memutar Acak Playlist Lokal"
+    end
+end)
+
+ShuffleBtn.MouseButton1Click:Connect(function()
+    isShuffleMode = not isShuffleMode
+    ShuffleBtn.BackgroundColor3 = isShuffleMode and Color3.fromRGB(41, 158, 239) or Color3.fromRGB(40, 52, 75)
+end)
 
 local function PlayAndSaveTrack(id, name)
     TrackTitle.Text = "🎵 " .. name
     PlayerStatusLabel.Text = "Status: ⏳ Mendownload dari YouTube..."
     PlayBtn.Text = "⏳"
+    isPlaylistMode = false
     
     task.spawn(function()
         local body = HttpService:JSONEncode({ videoId = id, title = name })
@@ -753,7 +1155,6 @@ end
 local function ExecuteSearch()
     if SearchBox.Text == "" then return end
     
-    -- Tampilkan Animasi Skeleton Loading Modern di Daftar
     ShowSkeletonLoading(SearchScroll)
     SearchStatusLabel.Text = "Status: ⏳ Mencari lagu di YouTube..."
     SearchStatusLabel.TextColor3 = Color3.fromRGB(255, 200, 80)
@@ -812,7 +1213,7 @@ SearchBox.FocusLost:Connect(ExecuteSearch)
 RenderLocalPlaylist()
 
 --------------------------------------------------------------------------------
--- 11. AUTO RESTORE PROTECTOR
+-- 12. AUTO RESTORE PROTECTOR
 --------------------------------------------------------------------------------
 PlayerGui.ChildRemoved:Connect(function(child)
     if child.Name == "NavySpotifyUI" then
