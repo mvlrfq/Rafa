@@ -1,20 +1,21 @@
 -- Spotify Navy Dashboard - Universal (Android & iOS)
--- Updated SERVER_URL & Fix Scrubbing Line (Anti Suara Hilang)
+-- Features: Bulletproof Smooth Drag (No Jump), CoreGui Persistence, Stable Scrubbing, iPhone Blur Modal
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local SoundService = game:GetService("SoundService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
 local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
 --------------------------------------------------------------------------------
--- 1. KONFIGURASI SERVER & CLEANUP EKSEKUSI GANDA
+-- 1. KONFIGURASI SERVER & COREGUI PERSISTENCE
 --------------------------------------------------------------------------------
 local SERVER_URL = "https://till-however-arts-zinc.trycloudflare.com"
 local LOCAL_JSON_FILE = "navyspotify_playlist.json"
 
-local TOGGLE_IMAGE_ID = "" -- Masukkan link/asset ID gambar jika ada
+local TOGGLE_IMAGE_ID = "" -- Masukkan link/asset ID gambar toggle jika ada
 
 local ExistingSound = SoundService:FindFirstChild("NavySpotifySound")
 if ExistingSound then
@@ -22,6 +23,9 @@ if ExistingSound then
     ExistingSound:Destroy()
 end
 
+if CoreGui:FindFirstChild("NavySpotifyUI") then
+    CoreGui.NavySpotifyUI:Destroy()
+end
 if PlayerGui:FindFirstChild("NavySpotifyUI") then
     PlayerGui.NavySpotifyUI:Destroy()
 end
@@ -31,7 +35,22 @@ ScreenGui.Name = "NavySpotifyUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.DisplayOrder = 2147483647
 ScreenGui.IgnoreGuiInset = true
-ScreenGui.Parent = PlayerGui
+
+local successProtect = pcall(function()
+    if syn and syn.protect_gui then
+        syn.protect_gui(ScreenGui)
+        ScreenGui.Parent = CoreGui
+    elseif protectgui then
+        protectgui(ScreenGui)
+        ScreenGui.Parent = CoreGui
+    else
+        ScreenGui.Parent = CoreGui
+    end
+end)
+
+if not successProtect or ScreenGui.Parent ~= CoreGui then
+    ScreenGui.Parent = PlayerGui
+end
 
 --------------------------------------------------------------------------------
 -- 2. MAIN FRAME & HEADER
@@ -122,17 +141,17 @@ ResizeCorner.CornerRadius = UDim.new(0, 4)
 ResizeCorner.Parent = ResizeHandle
 
 --------------------------------------------------------------------------------
--- 3. STRICT BOUNDARY DRAG
+-- 3. BULLETPROOF SMOOTH DRAG (FIXED: ZERO JUMP, STRICT BOUNDARY CLAMP)
 --------------------------------------------------------------------------------
 local function SetupSmoothDrag(frame, handle)
     local dragging = false
-    local dragInput, dragStart, startPos
+    local dragInput
+    local dragOffset = Vector2.new(0, 0)
 
     handle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
-            dragStart = input.Position
-            startPos = frame.AbsolutePosition
+            dragOffset = Vector2.new(input.Position.X - frame.AbsolutePosition.X, input.Position.Y - frame.AbsolutePosition.Y)
             
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
@@ -150,12 +169,11 @@ local function SetupSmoothDrag(frame, handle)
 
     UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
-            local delta = input.Position - dragStart
             local camera = workspace.CurrentCamera
             local viewport = camera and camera.ViewportSize or Vector2.new(1280, 720)
             
-            local newX = math.clamp(startPos.X + delta.X, 0, math.max(0, viewport.X - frame.AbsoluteSize.X))
-            local newY = math.clamp(startPos.Y + delta.Y, 0, math.max(0, viewport.Y - frame.AbsoluteSize.Y))
+            local newX = math.clamp(input.Position.X - dragOffset.X, 0, math.max(0, viewport.X - frame.AbsoluteSize.X))
+            local newY = math.clamp(input.Position.Y - dragOffset.Y, 0, math.max(0, viewport.Y - frame.AbsoluteSize.Y))
             
             frame.Position = UDim2.new(0, newX, 0, newY)
         end
@@ -751,7 +769,7 @@ TabLocalBtn.MouseButton1Click:Connect(function()
 end)
 
 --------------------------------------------------------------------------------
--- 10. AUDIO ENGINE & FIX SCRUBBING (PAUSE/RESUME STABLE METHOD)
+-- 10. AUDIO ENGINE & SCRUBBING
 --------------------------------------------------------------------------------
 local writefileFn = writefile or (syn and syn.writefile)
 local readfileFn = readfile or (syn and syn.readfile)
@@ -926,7 +944,7 @@ LoopBtn.MouseButton1Click:Connect(function()
     LoopBtn.BackgroundColor3 = CurrentSound.Looped and Color3.fromRGB(41, 158, 239) or Color3.fromRGB(40, 52, 75)
 end)
 
--- FIX SCRUBBING: PAUSE SAAT DIGESER & RESUME OTOMATIS (ANTI BISING & SUARA TERTINGGAL)
+-- SCRUBBING FIX
 local isSeeking = false
 local wasPlayingBeforeSeek = false
 
