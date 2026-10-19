@@ -1,5 +1,5 @@
 -- Spotify Navy Dashboard - Universal (Android & iOS)
--- Features: CoreGui Persistence (Never Disappears), Fixed Scrubbing Line, Updated Server URL
+-- Features: Perfect Zero-Jump Drag via RenderStepped, CoreGui Persistence, Stable Scrubbing
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -10,7 +10,7 @@ local CoreGui = game:GetService("CoreGui")
 local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
 --------------------------------------------------------------------------------
--- 1. KONFIGURASI SERVER & COREGUI PERSISTENCE (ANTI HILANG)
+-- 1. KONFIGURASI SERVER & COREGUI PERSISTENCE
 --------------------------------------------------------------------------------
 local SERVER_URL = "https://till-however-arts-zinc.trycloudflare.com"
 local LOCAL_JSON_FILE = "navyspotify_playlist.json"
@@ -23,7 +23,6 @@ if ExistingSound then
     ExistingSound:Destroy()
 end
 
--- Cek apakah UI lama ada di CoreGui atau PlayerGui, lalu bersihkan
 if CoreGui:FindFirstChild("NavySpotifyUI") then
     CoreGui.NavySpotifyUI:Destroy()
 end
@@ -37,7 +36,6 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.DisplayOrder = 2147483647
 ScreenGui.IgnoreGuiInset = true
 
--- Lindungi UI ke CoreGui agar tidak pernah hilang sampai keluar game/server
 local successProtect = pcall(function()
     if syn and syn.protect_gui then
         syn.protect_gui(ScreenGui)
@@ -143,42 +141,54 @@ ResizeCorner.CornerRadius = UDim.new(0, 4)
 ResizeCorner.Parent = ResizeHandle
 
 --------------------------------------------------------------------------------
--- 3. STRICT BOUNDARY DRAG
+-- 3. FIX ABSOLUT DRAG (RENDERSTEPPED - TANPA LONCAT/PERGESERAN SAMA SEKALI)
 --------------------------------------------------------------------------------
 local function SetupSmoothDrag(frame, handle)
     local dragging = false
-    local dragInput, dragStart, startPos
+    local startInputPos = Vector2.new(0, 0)
+    local startFramePos = Vector2.new(0, 0)
+    local renderConn = nil
 
     handle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
-            dragStart = input.Position
-            startPos = frame.AbsolutePosition
-            
+            startInputPos = Vector2.new(input.Position.X, input.Position.Y)
+            startFramePos = Vector2.new(frame.AbsolutePosition.X, frame.AbsolutePosition.Y)
+
+            if renderConn then renderConn:Disconnect() end
+
+            renderConn = RunService.RenderStepped:Connect(function()
+                if not dragging then
+                    if renderConn then
+                        renderConn:Disconnect()
+                        renderConn = nil
+                    end
+                    return
+                end
+
+                local currentMouse = UserInputService:GetMouseLocation()
+                -- Modifikasi posisi berdasarkan perbedaan koordinat awal
+                local deltaX = currentMouse.X - startInputPos.X
+                local deltaY = currentMouse.Y - startInputPos.Y
+
+                local camera = workspace.CurrentCamera
+                local viewport = camera and camera.ViewportSize or Vector2.new(1280, 720)
+
+                local targetX = math.clamp(startFramePos.X + deltaX, 0, math.max(0, viewport.X - frame.AbsoluteSize.X))
+                local targetY = math.clamp(startFramePos.Y + deltaY, 0, math.max(0, viewport.Y - frame.AbsoluteSize.Y))
+
+                frame.Position = UDim2.new(0, targetX, 0, targetY)
+            end)
+
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
+                    if renderConn then
+                        renderConn:Disconnect()
+                        renderConn = nil
+                    end
                 end
             end)
-        end
-    end)
-
-    handle.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            local camera = workspace.CurrentCamera
-            local viewport = camera and camera.ViewportSize or Vector2.new(1280, 720)
-            
-            local newX = math.clamp(startPos.X + delta.X, 0, math.max(0, viewport.X - frame.AbsoluteSize.X))
-            local newY = math.clamp(startPos.Y + delta.Y, 0, math.max(0, viewport.Y - frame.AbsoluteSize.Y))
-            
-            frame.Position = UDim2.new(0, newX, 0, newY)
         end
     end)
 end
@@ -186,6 +196,7 @@ end
 SetupSmoothDrag(MainFrame, TopBar)
 SetupSmoothDrag(ToggleBtn, ToggleBtn)
 
+-- Resizing Logic
 local isResizing = false
 local startSize, startMousePos
 
