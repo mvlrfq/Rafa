@@ -1,5 +1,5 @@
 -- Spotify Navy Dashboard - Universal (Android & iOS)
--- Features: Strict Screen Boundary Clamp, Clean Audio Scrubbing (No Noise), Persistent on Respawn, Soft-Rounded Image Toggle, Smooth Drag Fix, iPhone-style Blur Modal
+-- Updated SERVER_URL & Fix Scrubbing Line (Anti Suara Hilang)
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -9,13 +9,12 @@ local TweenService = game:GetService("TweenService")
 local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
 --------------------------------------------------------------------------------
--- 1. KONFIGURASI & CLEANUP EKSEKUSI GANDA
+-- 1. KONFIGURASI SERVER & CLEANUP EKSEKUSI GANDA
 --------------------------------------------------------------------------------
 local SERVER_URL = "https://till-however-arts-zinc.trycloudflare.com"
 local LOCAL_JSON_FILE = "navyspotify_playlist.json"
 
--- MASUKKAN LINK / ASSET ID GAMBAR TOGGLE DI SINI (Kosongkan jika ingin pakai teks default)
-local TOGGLE_IMAGE_ID = "" 
+local TOGGLE_IMAGE_ID = "" -- Masukkan link/asset ID gambar jika ada
 
 local ExistingSound = SoundService:FindFirstChild("NavySpotifySound")
 if ExistingSound then
@@ -29,7 +28,7 @@ end
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "NavySpotifyUI"
-ScreenGui.ResetOnSpawn = false -- UI TIDAK HILANG SAAT RESPAWN
+ScreenGui.ResetOnSpawn = false
 ScreenGui.DisplayOrder = 2147483647
 ScreenGui.IgnoreGuiInset = true
 ScreenGui.Parent = PlayerGui
@@ -86,7 +85,6 @@ local MinCorner = Instance.new("UICorner")
 MinCorner.CornerRadius = UDim.new(1, 0)
 MinCorner.Parent = MinBtn
 
--- TOGGLE BUTTON: KOTAK DENGAN SUDUT SOFT & SUPPORT GAMBAR
 local ToggleBtn = Instance.new("ImageButton")
 ToggleBtn.Size = UDim2.new(0, 44, 0, 44)
 ToggleBtn.Position = UDim2.new(0, 12, 0.4, 0)
@@ -96,7 +94,7 @@ ToggleBtn.Visible = false
 ToggleBtn.Parent = ScreenGui
 
 local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(0, 8) -- Kotak dengan sudut soft
+ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleBtn
 
 if TOGGLE_IMAGE_ID == "" then
@@ -109,7 +107,6 @@ if TOGGLE_IMAGE_ID == "" then
     ToggleText.Parent = ToggleBtn
 end
 
--- Resizing Handle
 local ResizeHandle = Instance.new("TextButton")
 ResizeHandle.Size = UDim2.new(0, 16, 0, 16)
 ResizeHandle.Position = UDim2.new(1, -16, 1, -16)
@@ -125,7 +122,7 @@ ResizeCorner.CornerRadius = UDim.new(0, 4)
 ResizeCorner.Parent = ResizeHandle
 
 --------------------------------------------------------------------------------
--- 3. STRICT BOUNDARY DRAG (TIDAK BISA KELUAR LAYAR & ANTI LONCAT)
+-- 3. STRICT BOUNDARY DRAG
 --------------------------------------------------------------------------------
 local function SetupSmoothDrag(frame, handle)
     local dragging = false
@@ -168,7 +165,6 @@ end
 SetupSmoothDrag(MainFrame, TopBar)
 SetupSmoothDrag(ToggleBtn, ToggleBtn)
 
--- Resizing Logic
 local isResizing = false
 local startSize, startMousePos
 
@@ -609,12 +605,12 @@ VolInputCorner.CornerRadius = UDim.new(0, 4)
 VolInputCorner.Parent = VolInputBox
 
 --------------------------------------------------------------------------------
--- 7. MODAL KONFIRMASI HAPUS (BLUR / GELAP ALA IPHONE & BLOCKING INTERACTION)
+-- 7. MODAL KONFIRMASI HAPUS
 --------------------------------------------------------------------------------
-local ConfirmOverlay = Instance.new("TextButton") -- TextButton agar menutup interaksi di belakangnya
+local ConfirmOverlay = Instance.new("TextButton")
 ConfirmOverlay.Size = UDim2.new(1, 0, 1, 0)
 ConfirmOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-ConfirmOverlay.BackgroundTransparency = 0.4 -- Efek blur transparan ala iPhone di belakang modal
+ConfirmOverlay.BackgroundTransparency = 0.4
 ConfirmOverlay.AutoButtonColor = false
 ConfirmOverlay.Text = ""
 ConfirmOverlay.Visible = false
@@ -755,7 +751,7 @@ TabLocalBtn.MouseButton1Click:Connect(function()
 end)
 
 --------------------------------------------------------------------------------
--- 10. AUDIO ENGINE & FIX SCRUBBING NOISE (MUTE SAAT GESER LINE)
+-- 10. AUDIO ENGINE & FIX SCRUBBING (PAUSE/RESUME STABLE METHOD)
 --------------------------------------------------------------------------------
 local writefileFn = writefile or (syn and syn.writefile)
 local readfileFn = readfile or (syn and syn.readfile)
@@ -930,9 +926,9 @@ LoopBtn.MouseButton1Click:Connect(function()
     LoopBtn.BackgroundColor3 = CurrentSound.Looped and Color3.fromRGB(41, 158, 239) or Color3.fromRGB(40, 52, 75)
 end)
 
--- SEEK DRAGGING PROGRESS BAR DENGAN MUTE AUDIO (ANTI SUARA BISING SAAT DIGESER)
+-- FIX SCRUBBING: PAUSE SAAT DIGESER & RESUME OTOMATIS (ANTI BISING & SUARA TERTINGGAL)
 local isSeeking = false
-local previousVolume = 1
+local wasPlayingBeforeSeek = false
 
 local function UpdateSeekPosition(input)
     if CurrentSound.TimeLength > 0 then
@@ -948,24 +944,29 @@ end
 ProgressBg.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         isSeeking = true
-        previousVolume = CurrentSound.Volume
-        CurrentSound.Volume = 0 -- Mute sementara saat digeser agar tidak ada suara bising
+        wasPlayingBeforeSeek = CurrentSound.IsPlaying
+        if wasPlayingBeforeSeek then
+            CurrentSound:Pause()
+        end
         UpdateSeekPosition(input)
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                if isSeeking then
+                    isSeeking = false
+                    if wasPlayingBeforeSeek then
+                        CurrentSound:Resume()
+                        PlayBtn.Text = "⏸"
+                    end
+                end
+            end
+        end)
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
     if isSeeking and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         UpdateSeekPosition(input)
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        if isSeeking then
-            isSeeking = false
-            CurrentSound.Volume = previousVolume -- Kembalikan volume normal setelah selesai digeser
-        end
     end
 end)
 
@@ -999,7 +1000,6 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- Volume Input Manual (%)
 VolInputBox.FocusLost:Connect(function()
     local num = tonumber(VolInputBox.Text)
     if num then
@@ -1111,7 +1111,6 @@ ConfirmDeleteBtn.MouseButton1Click:Connect(function()
     ConfirmOverlay.Visible = false
 end)
 
--- Play All
 PlayAllLocalBtn.MouseButton1Click:Connect(function()
     local playlist = LoadLocalPlaylist()
     if #playlist > 0 then
@@ -1122,7 +1121,6 @@ PlayAllLocalBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Shuffle Local
 ShuffleLocalBtn.MouseButton1Click:Connect(function()
     local playlist = LoadLocalPlaylist()
     if #playlist > 0 then
@@ -1139,7 +1137,9 @@ ShuffleBtn.MouseButton1Click:Connect(function()
     ShuffleBtn.BackgroundColor3 = isShuffleMode and Color3.fromRGB(41, 158, 239) or Color3.fromRGB(40, 52, 75)
 end)
 
--- DOWNLOAD LOGIKA
+--------------------------------------------------------------------------------
+-- 12. DOWNLOAD & SEARCH
+--------------------------------------------------------------------------------
 local function PlayAndSaveTrack(id, name)
     SearchStatusLabel.Text = "Status Pencarian: ⏳ Mendownload " .. name .. "..."
     SearchStatusLabel.TextColor3 = Color3.fromRGB(255, 200, 80)
