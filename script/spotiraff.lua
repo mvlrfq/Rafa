@@ -1,41 +1,45 @@
--- Spotify Navy Premium Music Player (Full Features & Universal Support)
+-- Spotify Navy Dashboard - Universal (Android & iOS)
+-- Features: Resizable UI, Bounds Guard, Separate Status, Local Cached Songs (+Delete Button), Fixed Auto-Canvas Scroll
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local SoundService = game:GetService("SoundService")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
 --------------------------------------------------------------------------------
--- 1. KONFIGURASI SERVER CLOUDFLARE TUNNEL
+-- 1. KONFIGURASI SERVER
 --------------------------------------------------------------------------------
 local SERVER_URL = "https://till-however-arts-zinc.trycloudflare.com"
+local LOCAL_JSON_FILE = "navyspotify_playlist.json"
 
 if PlayerGui:FindFirstChild("NavySpotifyUI") then
     PlayerGui.NavySpotifyUI:Destroy()
 end
 
+--------------------------------------------------------------------------------
+-- SCREEN GUI & MAIN FRAME (MAX Z-INDEX & PERSISTENT GUARD)
+--------------------------------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "NavySpotifyUI"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.DisplayOrder = 999999
+ScreenGui.DisplayOrder = 999999999 -- Dipastikan selalu berada di paling depan
+ScreenGui.IgnoreGuiInset = true    -- Menembus batas topbar bawaan Roblox
 ScreenGui.Parent = PlayerGui
 
---------------------------------------------------------------------------------
--- 2. MAIN FRAME & HEADER INFORMATIF
---------------------------------------------------------------------------------
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 400, 0, 480)
-MainFrame.Position = UDim2.new(0.5, -200, 0.3, -240)
+MainFrame.Size = UDim2.new(0, 340, 0, 420)
+MainFrame.Position = UDim2.new(0.5, -170, 0.25, -210)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 20, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
+MainFrame.ClipsDescendants = false
+MainFrame.ZIndex = 999 -- ZIndex tinggi agar tidak terhalang UI lain
 MainFrame.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 14)
+MainCorner.CornerRadius = UDim.new(0, 12)
 MainCorner.Parent = MainFrame
 
 local MainStroke = Instance.new("UIStroke")
@@ -45,36 +49,24 @@ MainStroke.Parent = MainFrame
 
 -- Header Title
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -120, 0, 30)
-Title.Position = UDim2.new(0, 16, 0, 6)
+Title.Size = UDim2.new(1, -50, 0, 32)
+Title.Position = UDim2.new(0, 12, 0, 2)
 Title.BackgroundTransparency = 1
 Title.Text = "🎵 Spotify Navy Dashboard"
 Title.TextColor3 = Color3.fromRGB(240, 245, 255)
-Title.TextSize = 13
+Title.TextSize = 12
 Title.Font = Enum.Font.GothamBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = MainFrame
 
--- Status Server & Ping Indicator (Fitur Lama Dikembalikan!)
-local ServerStatusLabel = Instance.new("TextLabel")
-ServerStatusLabel.Size = UDim2.new(1, -32, 0, 16)
-ServerStatusLabel.Position = UDim2.new(0, 16, 0, 32)
-ServerStatusLabel.BackgroundTransparency = 1
-ServerStatusLabel.Text = "Status: 🟡 Memeriksa Koneksi..."
-ServerStatusLabel.TextColor3 = Color3.fromRGB(255, 200, 80)
-ServerStatusLabel.TextSize = 10
-ServerStatusLabel.Font = Enum.Font.Gotham
-ServerStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
-ServerStatusLabel.Parent = MainFrame
-
 -- Minimize Button
 local MinBtn = Instance.new("TextButton")
-MinBtn.Size = UDim2.new(0, 26, 0, 26)
-MinBtn.Position = UDim2.new(1, -36, 0, 8)
+MinBtn.Size = UDim2.new(0, 24, 0, 24)
+MinBtn.Position = UDim2.new(1, -30, 0, 6)
 MinBtn.BackgroundColor3 = Color3.fromRGB(28, 38, 56)
 MinBtn.Text = "-"
 MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinBtn.TextSize = 16
+MinBtn.TextSize = 14
 MinBtn.Font = Enum.Font.GothamBold
 MinBtn.Parent = MainFrame
 
@@ -82,13 +74,13 @@ local MinCorner = Instance.new("UICorner")
 MinCorner.CornerRadius = UDim.new(1, 0)
 MinCorner.Parent = MinBtn
 
--- Floating Toggle Icon
+-- Floating Toggle Icon (Memiliki Screen Boundary Guard)
 local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.new(0, 48, 0, 48)
-ToggleBtn.Position = UDim2.new(0, 15, 0.4, 0)
+ToggleBtn.Size = UDim2.new(0, 44, 0, 44)
+ToggleBtn.Position = UDim2.new(0, 12, 0.4, 0)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(41, 158, 239)
 ToggleBtn.Text = "🎵"
-ToggleBtn.TextSize = 22
+ToggleBtn.TextSize = 20
 ToggleBtn.Active = true
 ToggleBtn.Draggable = true
 ToggleBtn.Visible = false
@@ -98,98 +90,141 @@ local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(1, 0)
 ToggleCorner.Parent = ToggleBtn
 
+-- Resizing Handle (Tombol Tarik Ukuran UI)
+local ResizeHandle = Instance.new("TextButton")
+ResizeHandle.Size = UDim2.new(0, 16, 0, 16)
+ResizeHandle.Position = UDim2.new(1, -16, 1, -16)
+ResizeHandle.BackgroundColor3 = Color3.fromRGB(41, 158, 239)
+ResizeHandle.Text = "↘"
+ResizeHandle.TextColor3 = Color3.fromRGB(255, 255, 255)
+ResizeHandle.TextSize = 10
+ResizeHandle.Font = Enum.Font.GothamBold
+ResizeHandle.Parent = MainFrame
+
+local ResizeCorner = Instance.new("UICorner")
+ResizeCorner.CornerRadius = UDim.new(0, 4)
+ResizeCorner.Parent = ResizeHandle
+
 --------------------------------------------------------------------------------
--- 3. KOTAK PENCARIAN & TOMBOL CARI
+-- 3. STATUS KONEKSI & PENCARIAN (BAGIAN ATAS DEKAT INPUT)
 --------------------------------------------------------------------------------
 local SearchBox = Instance.new("TextBox")
-SearchBox.Size = UDim2.new(1, -95, 0, 36)
-SearchBox.Position = UDim2.new(0, 16, 0, 54)
+SearchBox.Size = UDim2.new(1, -80, 0, 32)
+SearchBox.Position = UDim2.new(0, 12, 0, 36)
 SearchBox.BackgroundColor3 = Color3.fromRGB(22, 30, 45)
 SearchBox.PlaceholderText = "Cari judul lagu atau artis..."
 SearchBox.PlaceholderColor3 = Color3.fromRGB(120, 135, 165)
 SearchBox.Text = ""
 SearchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-SearchBox.TextSize = 12
+SearchBox.TextSize = 11
 SearchBox.Font = Enum.Font.Gotham
 SearchBox.Parent = MainFrame
 
 local SearchCorner = Instance.new("UICorner")
-SearchCorner.CornerRadius = UDim.new(0, 10)
+SearchCorner.CornerRadius = UDim.new(0, 8)
 SearchCorner.Parent = SearchBox
 
 local SearchBtn = Instance.new("TextButton")
-SearchBtn.Size = UDim2.new(0, 60, 0, 36)
-SearchBtn.Position = UDim2.new(1, -76, 0, 54)
+SearchBtn.Size = UDim2.new(0, 52, 0, 32)
+SearchBtn.Position = UDim2.new(1, -64, 0, 36)
 SearchBtn.BackgroundColor3 = Color3.fromRGB(41, 158, 239)
 SearchBtn.Text = "Cari"
 SearchBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-SearchBtn.TextSize = 12
+SearchBtn.TextSize = 11
 SearchBtn.Font = Enum.Font.GothamBold
 SearchBtn.Parent = MainFrame
 
 local SearchBtnCorner = Instance.new("UICorner")
-SearchBtnCorner.CornerRadius = UDim.new(0, 10)
+SearchBtnCorner.CornerRadius = UDim.new(0, 8)
 SearchBtnCorner.Parent = SearchBtn
 
---------------------------------------------------------------------------------
--- 4. SECTION 1: DAFTAR PENCARIAN LAGU (SCROLLING LIST)
---------------------------------------------------------------------------------
-local ListSectionLabel = Instance.new("TextLabel")
-ListSectionLabel.Size = UDim2.new(1, -32, 0, 18)
-ListSectionLabel.Position = UDim2.new(0, 16, 0, 98)
-ListSectionLabel.BackgroundTransparency = 1
-ListSectionLabel.Text = "📁 HASIL PENCARIAN (Klik lagu untuk memutar):"
-ListSectionLabel.TextColor3 = Color3.fromRGB(140, 160, 190)
-ListSectionLabel.TextSize = 10
-ListSectionLabel.Font = Enum.Font.GothamBold
-ListSectionLabel.TextXAlignment = Enum.TextXAlignment.Left
-ListSectionLabel.Parent = MainFrame
-
-local ScrollFrame = Instance.new("ScrollingFrame")
-ScrollFrame.Size = UDim2.new(1, -32, 0, 180)
-ScrollFrame.Position = UDim2.new(0, 16, 0, 118)
-ScrollFrame.BackgroundColor3 = Color3.fromRGB(18, 24, 38)
-ScrollFrame.BorderSizePixel = 0
-ScrollFrame.ScrollBarThickness = 4
-ScrollFrame.Parent = MainFrame
-
-local ScrollCorner = Instance.new("UICorner")
-ScrollCorner.CornerRadius = UDim.new(0, 10)
-ScrollCorner.Parent = ScrollFrame
-
-local UIList = Instance.new("UIListLayout")
-UIList.Padding = UDim.new(0, 6)
-UIList.Parent = ScrollFrame
-
-local UIPadding = Instance.new("UIPadding")
-UIPadding.PaddingTop = UDim.new(0, 6)
-UIPadding.PaddingBottom = UDim.new(0, 6)
-UIPadding.PaddingLeft = UDim.new(0, 6)
-UIPadding.PaddingRight = UDim.new(0, 6)
-UIPadding.Parent = ScrollFrame
+-- Info Status Pencarian & Server (Berada di atas, terlihat jelas oleh user)
+local SearchStatusLabel = Instance.new("TextLabel")
+SearchStatusLabel.Size = UDim2.new(1, -24, 0, 16)
+SearchStatusLabel.Position = UDim2.new(0, 12, 0, 72)
+SearchStatusLabel.BackgroundTransparency = 1
+SearchStatusLabel.Text = "Status Server: 🟡 Memeriksa koneksi..."
+SearchStatusLabel.TextColor3 = Color3.fromRGB(255, 200, 80)
+SearchStatusLabel.TextSize = 9
+SearchStatusLabel.Font = Enum.Font.Gotham
+SearchStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+SearchStatusLabel.Parent = MainFrame
 
 --------------------------------------------------------------------------------
--- 5. SECTION 2: ACTIVE PLAYER PANEL (PEMUTAR AUDIO AKTIF)
+-- 4. CONTAINER UTAMA DENGAN AUTO SCROLL
 --------------------------------------------------------------------------------
-local PlayerSectionLabel = Instance.new("TextLabel")
-PlayerSectionLabel.Size = UDim2.new(1, -32, 0, 18)
-PlayerSectionLabel.Position = UDim2.new(0, 16, 0, 310)
-PlayerSectionLabel.BackgroundTransparency = 1
-PlayerSectionLabel.Text = "🎧 PEMUTAR AUDIO AKTIF (Active Player):"
-PlayerSectionLabel.TextColor3 = Color3.fromRGB(41, 158, 239)
-PlayerSectionLabel.TextSize = 10
-PlayerSectionLabel.Font = Enum.Font.GothamBold
-PlayerSectionLabel.TextXAlignment = Enum.TextXAlignment.Left
-PlayerSectionLabel.Parent = MainFrame
+local MainScroll = Instance.new("ScrollingFrame")
+MainScroll.Size = UDim2.new(1, -24, 1, -210)
+MainScroll.Position = UDim2.new(0, 12, 0, 92)
+MainScroll.BackgroundTransparency = 1
+MainScroll.BorderSizePixel = 0
+MainScroll.ScrollBarThickness = 3
+MainScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+MainScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+MainScroll.Parent = MainFrame
 
+local MainScrollList = Instance.new("UIListLayout")
+MainScrollList.Padding = UDim.new(0, 8)
+MainScrollList.SortOrder = Enum.SortOrder.LayoutOrder
+MainScrollList.Parent = MainScroll
+
+-- 4A. SECTION HASIL PENCARIAN YOUTUBE
+local SearchSectionHeader = Instance.new("TextLabel")
+SearchSectionHeader.Size = UDim2.new(1, 0, 0, 16)
+SearchSectionHeader.BackgroundTransparency = 1
+SearchSectionHeader.Text = "🔍 HASIL PENCARIAN YOUTUBE:"
+SearchSectionHeader.TextColor3 = Color3.fromRGB(140, 160, 190)
+SearchSectionHeader.TextSize = 9
+SearchSectionHeader.Font = Enum.Font.GothamBold
+SearchSectionHeader.TextXAlignment = Enum.TextXAlignment.Left
+SearchSectionHeader.LayoutOrder = 1
+SearchSectionHeader.Parent = MainScroll
+
+local SearchResultFrame = Instance.new("Frame")
+SearchResultFrame.Size = UDim2.new(1, 0, 0, 0)
+SearchResultFrame.BackgroundTransparency = 1
+SearchResultFrame.AutomaticSize = Enum.AutomaticSize.Y
+SearchResultFrame.LayoutOrder = 2
+SearchResultFrame.Parent = MainScroll
+
+local SearchResultList = Instance.new("UIListLayout")
+SearchResultList.Padding = UDim.new(0, 4)
+SearchResultList.Parent = SearchResultFrame
+
+-- 4B. SECTION LAGU LOKAL TERSIMPAN
+local LocalSectionHeader = Instance.new("TextLabel")
+LocalSectionHeader.Size = UDim2.new(1, 0, 0, 16)
+LocalSectionHeader.BackgroundTransparency = 1
+LocalSectionHeader.Text = "💾 LAGU LOKAL TERSIMPAN (Tanpa Kuota/Download):"
+LocalSectionHeader.TextColor3 = Color3.fromRGB(80, 220, 120)
+LocalSectionHeader.TextSize = 9
+LocalSectionHeader.Font = Enum.Font.GothamBold
+LocalSectionHeader.TextXAlignment = Enum.TextXAlignment.Left
+LocalSectionHeader.LayoutOrder = 3
+LocalSectionHeader.Parent = MainScroll
+
+local LocalResultFrame = Instance.new("Frame")
+LocalResultFrame.Size = UDim2.new(1, 0, 0, 0)
+LocalResultFrame.BackgroundTransparency = 1
+LocalResultFrame.AutomaticSize = Enum.AutomaticSize.Y
+LocalResultFrame.LayoutOrder = 4
+LocalResultFrame.Parent = MainScroll
+
+local LocalResultList = Instance.new("UIListLayout")
+LocalResultList.Padding = UDim.new(0, 4)
+LocalResultList.Parent = LocalResultFrame
+
+--------------------------------------------------------------------------------
+-- 5. ACTIVE PLAYER PANEL (BAGIAN BAWAH TERPISAH)
+--------------------------------------------------------------------------------
 local PlayerBar = Instance.new("Frame")
-PlayerBar.Size = UDim2.new(1, -32, 0, 130)
-PlayerBar.Position = UDim2.new(0, 16, 0, 330)
+PlayerBar.Size = UDim2.new(1, -24, 0, 110)
+PlayerBar.Position = UDim2.new(0, 12, 1, -118)
 PlayerBar.BackgroundColor3 = Color3.fromRGB(22, 30, 46)
 PlayerBar.Parent = MainFrame
 
 local PlayerCorner = Instance.new("UICorner")
-PlayerCorner.CornerRadius = UDim.new(0, 12)
+PlayerCorner.CornerRadius = UDim.new(0, 10)
 PlayerCorner.Parent = PlayerBar
 
 local PlayerStroke = Instance.new("UIStroke")
@@ -198,35 +233,32 @@ PlayerStroke.Transparency = 0.4
 PlayerStroke.Thickness = 1
 PlayerStroke.Parent = PlayerBar
 
--- Status Track / Judul Lagu
 local TrackTitle = Instance.new("TextLabel")
-TrackTitle.Size = UDim2.new(1, -20, 0, 22)
-TrackTitle.Position = UDim2.new(0, 10, 0, 8)
+TrackTitle.Size = UDim2.new(1, -16, 0, 18)
+TrackTitle.Position = UDim2.new(0, 8, 0, 6)
 TrackTitle.BackgroundTransparency = 1
-TrackTitle.Text = "Belum ada lagu yang diputar"
+TrackTitle.Text = "Belum ada lagu diputar"
 TrackTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-TrackTitle.TextSize = 11
+TrackTitle.TextSize = 10
 TrackTitle.Font = Enum.Font.GothamBold
 TrackTitle.TextTruncate = Enum.TextTruncate.AtEnd
 TrackTitle.TextXAlignment = Enum.TextXAlignment.Left
 TrackTitle.Parent = PlayerBar
 
--- Status Detail Progress
-local StatusDetail = Instance.new("TextLabel")
-StatusDetail.Size = UDim2.new(1, -20, 0, 14)
-StatusDetail.Position = UDim2.new(0, 10, 0, 30)
-StatusDetail.BackgroundTransparency = 1
-StatusDetail.Text = "Status: Standby"
-StatusDetail.TextColor3 = Color3.fromRGB(140, 160, 190)
-StatusDetail.TextSize = 9
-StatusDetail.Font = Enum.Font.Gotham
-StatusDetail.TextXAlignment = Enum.TextXAlignment.Left
-StatusDetail.Parent = PlayerBar
+local PlayerStatusLabel = Instance.new("TextLabel")
+PlayerStatusLabel.Size = UDim2.new(1, -16, 0, 14)
+PlayerStatusLabel.Position = UDim2.new(0, 8, 0, 24)
+PlayerStatusLabel.BackgroundTransparency = 1
+PlayerStatusLabel.Text = "Status Pemutar: Standby"
+PlayerStatusLabel.TextColor3 = Color3.fromRGB(140, 160, 190)
+PlayerStatusLabel.TextSize = 8
+PlayerStatusLabel.Font = Enum.Font.Gotham
+PlayerStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+PlayerStatusLabel.Parent = PlayerBar
 
--- Progress Bar Background
 local ProgressBg = Instance.new("Frame")
-ProgressBg.Size = UDim2.new(1, -20, 0, 5)
-ProgressBg.Position = UDim2.new(0, 10, 0, 50)
+ProgressBg.Size = UDim2.new(1, -16, 0, 4)
+ProgressBg.Position = UDim2.new(0, 8, 0, 42)
 ProgressBg.BackgroundColor3 = Color3.fromRGB(35, 48, 70)
 ProgressBg.BorderSizePixel = 0
 ProgressBg.Parent = PlayerBar
@@ -235,7 +267,6 @@ local ProgressBgCorner = Instance.new("UICorner")
 ProgressBgCorner.CornerRadius = UDim.new(1, 0)
 ProgressBgCorner.Parent = ProgressBg
 
--- Progress Bar Fill
 local ProgressFill = Instance.new("Frame")
 ProgressFill.Size = UDim2.new(0, 0, 1, 0)
 ProgressFill.BackgroundColor3 = Color3.fromRGB(41, 158, 239)
@@ -246,73 +277,70 @@ local ProgressFillCorner = Instance.new("UICorner")
 ProgressFillCorner.CornerRadius = UDim.new(1, 0)
 ProgressFillCorner.Parent = ProgressFill
 
--- Time Labels
 local TimeLabel = Instance.new("TextLabel")
-TimeLabel.Size = UDim2.new(1, -20, 0, 14)
-TimeLabel.Position = UDim2.new(0, 10, 0, 58)
+TimeLabel.Size = UDim2.new(1, -16, 0, 12)
+TimeLabel.Position = UDim2.new(0, 8, 0, 48)
 TimeLabel.BackgroundTransparency = 1
 TimeLabel.Text = "00:00 / 00:00"
 TimeLabel.TextColor3 = Color3.fromRGB(150, 170, 200)
-TimeLabel.TextSize = 10
+TimeLabel.TextSize = 8
 TimeLabel.Font = Enum.Font.Gotham
 TimeLabel.TextXAlignment = Enum.TextXAlignment.Right
 TimeLabel.Parent = PlayerBar
 
--- Tombol Kontrol (Play, Stop, Loop)
 local PlayBtn = Instance.new("TextButton")
-PlayBtn.Size = UDim2.new(0, 38, 0, 38)
-PlayBtn.Position = UDim2.new(0, 10, 0, 80)
+PlayBtn.Size = UDim2.new(0, 32, 0, 32)
+PlayBtn.Position = UDim2.new(0, 8, 0, 68)
 PlayBtn.BackgroundColor3 = Color3.fromRGB(41, 158, 239)
 PlayBtn.Text = "▶"
 PlayBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-PlayBtn.TextSize = 14
+PlayBtn.TextSize = 12
 PlayBtn.Font = Enum.Font.GothamBold
 PlayBtn.Parent = PlayerBar
 
 local PlayCorner = Instance.new("UICorner")
-PlayCorner.CornerRadius = UDim.new(0, 8)
+PlayCorner.CornerRadius = UDim.new(0, 6)
 PlayCorner.Parent = PlayBtn
 
 local StopBtn = Instance.new("TextButton")
-StopBtn.Size = UDim2.new(0, 38, 0, 38)
-StopBtn.Position = UDim2.new(0, 54, 0, 80)
+StopBtn.Size = UDim2.new(0, 32, 0, 32)
+StopBtn.Position = UDim2.new(0, 46, 0, 68)
 StopBtn.BackgroundColor3 = Color3.fromRGB(40, 52, 75)
 StopBtn.Text = "◼"
 StopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-StopBtn.TextSize = 12
+StopBtn.TextSize = 10
 StopBtn.Font = Enum.Font.GothamBold
 StopBtn.Parent = PlayerBar
 
 local StopCorner = Instance.new("UICorner")
-StopCorner.CornerRadius = UDim.new(0, 8)
+StopCorner.CornerRadius = UDim.new(0, 6)
 StopCorner.Parent = StopBtn
 
 local LoopBtn = Instance.new("TextButton")
-LoopBtn.Size = UDim2.new(0, 38, 0, 38)
-LoopBtn.Position = UDim2.new(0, 98, 0, 80)
+LoopBtn.Size = UDim2.new(0, 32, 0, 32)
+LoopBtn.Position = UDim2.new(0, 84, 0, 68)
 LoopBtn.BackgroundColor3 = Color3.fromRGB(40, 52, 75)
 LoopBtn.Text = "🔁"
 LoopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-LoopBtn.TextSize = 13
+LoopBtn.TextSize = 11
 LoopBtn.Font = Enum.Font.GothamBold
 LoopBtn.Parent = PlayerBar
 
 local LoopCorner = Instance.new("UICorner")
-LoopCorner.CornerRadius = UDim.new(0, 8)
+LoopCorner.CornerRadius = UDim.new(0, 6)
 LoopCorner.Parent = LoopBtn
 
--- Volume Slider
 local VolIcon = Instance.new("TextLabel")
-VolIcon.Size = UDim2.new(0, 20, 0, 38)
-VolIcon.Position = UDim2.new(1, -125, 0, 80)
+VolIcon.Size = UDim2.new(0, 16, 0, 32)
+VolIcon.Position = UDim2.new(1, -110, 0, 68)
 VolIcon.BackgroundTransparency = 1
 VolIcon.Text = "🔊"
-VolIcon.TextSize = 13
+VolIcon.TextSize = 11
 VolIcon.Parent = PlayerBar
 
 local VolBg = Instance.new("TextButton")
-VolBg.Size = UDim2.new(0, 90, 0, 6)
-VolBg.Position = UDim2.new(1, -100, 0, 96)
+VolBg.Size = UDim2.new(0, 80, 0, 5)
+VolBg.Position = UDim2.new(1, -90, 0, 82)
 VolBg.BackgroundColor3 = Color3.fromRGB(35, 48, 70)
 VolBg.Text = ""
 VolBg.AutoButtonColor = false
@@ -333,40 +361,92 @@ VolFillCorner.CornerRadius = UDim.new(1, 0)
 VolFillCorner.Parent = VolFill
 
 --------------------------------------------------------------------------------
--- 6. TOAST NOTIFICATION SYSTEM (FITUR LAMA DIKEMBALIKAN!)
+-- 6. FITUR RESIZING & SCREEN BOUNDARY GUARD
 --------------------------------------------------------------------------------
-local function ShowToast(message, isError)
-    local Toast = Instance.new("Frame")
-    Toast.Size = UDim2.new(0, 280, 0, 32)
-    Toast.Position = UDim2.new(0.5, -140, 0.9, 0)
-    Toast.BackgroundColor3 = isError and Color3.fromRGB(180, 40, 50) or Color3.fromRGB(30, 140, 90)
-    Toast.Parent = ScreenGui
+local isResizing = false
+local startSize, startMousePos
 
-    local ToastCorner = Instance.new("UICorner")
-    ToastCorner.CornerRadius = UDim.new(0, 8)
-    ToastCorner.Parent = Toast
+ResizeHandle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        isResizing = true
+        startSize = MainFrame.Size
+        startMousePos = input.Position
+    end
+end)
 
-    local ToastText = Instance.new("TextLabel")
-    ToastText.Size = UDim2.new(1, -16, 1, 0)
-    ToastText.Position = UDim2.new(0, 8, 0, 0)
-    ToastText.BackgroundTransparency = 1
-    ToastText.Text = message
-    ToastText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ToastText.TextSize = 11
-    ToastText.Font = Enum.Font.GothamBold
-    ToastText.Parent = Toast
+UserInputService.InputChanged:Connect(function(input)
+    if isResizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - startMousePos
+        local newWidth = math.clamp(startSize.X.Offset + delta.X, 280, 500)
+        local newHeight = math.clamp(startSize.Y.Offset + delta.Y, 360, 600)
+        MainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
+    end
+end)
 
-    task.delay(3, function()
-        if Toast then Toast:Destroy() end
-    end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        isResizing = false
+    end
+end)
+
+-- Boundary Guard agar UI tidak bisa digeser ke luar layar
+local function ClampToScreen(frame)
+    local camera = workspace.CurrentCamera
+    if not camera then return end
+    local viewport = camera.ViewportSize
+    
+    local absPos = frame.AbsolutePosition
+    local absSize = frame.AbsoluteSize
+    
+    local clampedX = math.clamp(absPos.X, 0, math.max(0, viewport.X - absSize.X))
+    local clampedY = math.clamp(absPos.Y, 0, math.max(0, viewport.Y - absSize.Y))
+    
+    if absPos.X ~= clampedX or absPos.Y ~= clampedY then
+        frame.Position = UDim2.new(0, clampedX, 0, clampedY)
+    end
+end
+
+MainFrame:GetPropertyChangedSignal("Position"):Connect(function()
+    if not isResizing then ClampToScreen(MainFrame) end
+end)
+
+ToggleBtn:GetPropertyChangedSignal("Position"):Connect(function()
+    ClampToScreen(ToggleBtn)
+end)
+
+--------------------------------------------------------------------------------
+-- 7. EXECUTOR FILE FUNCTIONS & PLAYLIST MANAGEMENT
+--------------------------------------------------------------------------------
+local writefileFn = writefile or (syn and syn.writefile)
+local readfileFn = readfile or (syn and syn.readfile)
+local isfileFn = isfile or (syn and syn.isfile)
+local delfileFn = delfile or (syn and syn.delfile)
+local getcustomassetFn = getcustomasset or getsynasset or (syn and syn.getcustomasset)
+
+local function LoadLocalPlaylist()
+    if isfileFn and isfileFn(LOCAL_JSON_FILE) then
+        local success, content = pcall(function() return readfileFn(LOCAL_JSON_FILE) end)
+        if success and content then
+            local pSuccess, data = pcall(function() return HttpService:JSONDecode(content) end)
+            if pSuccess and type(data) == "table" then
+                return data
+            end
+        end
+    end
+    return {}
+end
+
+local function SaveLocalPlaylist(playlist)
+    if writefileFn then
+        pcall(function()
+            writefileFn(LOCAL_JSON_FILE, HttpService:JSONEncode(playlist))
+        end)
+    end
 end
 
 --------------------------------------------------------------------------------
--- 7. HELPER REQUEST & CROSS-PLATFORM EXECUTOR COMPATIBILITY
+-- 8. KONEKSI CHECK & AUDIO ENGINE
 --------------------------------------------------------------------------------
-local writefileFn = writefile or (syn and syn.writefile)
-local getcustomassetFn = getcustomasset or getsynasset or (syn and syn.getcustomasset)
-
 local function customRequest(reqData)
     local req = (syn and syn.request) or request or http_request or (http and http.request)
     if not req then return nil end
@@ -377,7 +457,7 @@ local function customRequest(reqData)
     return response
 end
 
--- Check Server Status Loop
+-- Server Health Check Loop
 task.spawn(function()
     while task.wait(5) do
         local startTime = os.clock()
@@ -385,18 +465,15 @@ task.spawn(function()
         local latency = math.floor((os.clock() - startTime) * 1000)
         
         if res and res.StatusCode == 200 then
-            ServerStatusLabel.Text = string.format("Status: 🟢 Connected (%d ms)", latency)
-            ServerStatusLabel.TextColor3 = Color3.fromRGB(80, 220, 120)
+            SearchStatusLabel.Text = string.format("Status Server: 🟢 Terhubung (%d ms)", latency)
+            SearchStatusLabel.TextColor3 = Color3.fromRGB(80, 220, 120)
         else
-            ServerStatusLabel.Text = "Status: 🔴 Server Disconnected!"
-            ServerStatusLabel.TextColor3 = Color3.fromRGB(240, 80, 80)
+            SearchStatusLabel.Text = "Status Server: 🔴 Terputus dari Cloudflare!"
+            SearchStatusLabel.TextColor3 = Color3.fromRGB(240, 80, 80)
         end
     end
 end)
 
---------------------------------------------------------------------------------
--- 8. LOGIKA AUDIO SOUNDSERVICE
---------------------------------------------------------------------------------
 local CurrentSound = SoundService:FindFirstChild("NavySpotifySound")
 if not CurrentSound then
     CurrentSound = Instance.new("Sound")
@@ -426,11 +503,11 @@ PlayBtn.MouseButton1Click:Connect(function()
         if CurrentSound.IsPlaying then
             CurrentSound:Pause()
             PlayBtn.Text = "▶"
-            StatusDetail.Text = "Status: Diberhentikan Sementara (Paused)"
+            PlayerStatusLabel.Text = "Status Pemutar: Diberhentikan (Paused)"
         else
             CurrentSound:Play()
             PlayBtn.Text = "⏸"
-            StatusDetail.Text = "Status: Memutar Musik..."
+            PlayerStatusLabel.Text = "Status Pemutar: Memutar Musik..."
         end
     end
 end)
@@ -440,18 +517,12 @@ StopBtn.MouseButton1Click:Connect(function()
     CurrentSound.TimePosition = 0
     PlayBtn.Text = "▶"
     ProgressFill.Size = UDim2.new(0, 0, 1, 0)
-    StatusDetail.Text = "Status: Dihentikan (Stopped)"
+    PlayerStatusLabel.Text = "Status Pemutar: Dihentikan"
 end)
 
 LoopBtn.MouseButton1Click:Connect(function()
     CurrentSound.Looped = not CurrentSound.Looped
-    if CurrentSound.Looped then
-        LoopBtn.BackgroundColor3 = Color3.fromRGB(41, 158, 239)
-        ShowToast("🔁 Loop Mode Aktif", false)
-    else
-        LoopBtn.BackgroundColor3 = Color3.fromRGB(40, 52, 75)
-        ShowToast("🔁 Loop Mode Nonaktif", false)
-    end
+    LoopBtn.BackgroundColor3 = CurrentSound.Looped and Color3.fromRGB(41, 158, 239) or Color3.fromRGB(40, 52, 75)
 end)
 
 -- Volume Drag Function
@@ -490,13 +561,97 @@ ToggleBtn.MouseButton1Click:Connect(function()
 end)
 
 --------------------------------------------------------------------------------
--- 9. LOGIKA SEARCH & PLAY TRACK (DENGAN DETAIL LOGGING)
+-- 9. LOGIKA TAMPILAN LAGU LOKAL TERSIMPAN & MENGHAPUS FILE
 --------------------------------------------------------------------------------
-local function PlayTrack(id, name)
+local RenderLocalPlaylist -- forward declaration
+
+RenderLocalPlaylist = function()
+    for _, child in pairs(LocalResultFrame:GetChildren()) do
+        if child:IsA("Frame") then child:Destroy() end
+    end
+    
+    local playlist = LoadLocalPlaylist()
+    
+    if #playlist == 0 then
+        LocalSectionHeader.Text = "💾 LAGU LOKAL TERSIMPAN (Belum ada lagu lokal):"
+        return
+    end
+    
+    LocalSectionHeader.Text = string.format("💾 LAGU LOKAL TERSIMPAN (%d lagu siap diputar):", #playlist)
+    
+    for idx, item in ipairs(playlist) do
+        local Card = Instance.new("Frame")
+        Card.Size = UDim2.new(1, 0, 0, 30)
+        Card.BackgroundColor3 = Color3.fromRGB(22, 34, 48)
+        Card.Parent = LocalResultFrame
+        
+        local CardCorner = Instance.new("UICorner")
+        CardCorner.CornerRadius = UDim.new(0, 6)
+        CardCorner.Parent = Card
+        
+        local PlayLocalBtn = Instance.new("TextButton")
+        PlayLocalBtn.Size = UDim2.new(1, -36, 1, 0)
+        PlayLocalBtn.Position = UDim2.new(0, 6, 0, 0)
+        PlayLocalBtn.BackgroundTransparency = 1
+        PlayLocalBtn.Text = "🎵  " .. item.title
+        PlayLocalBtn.TextColor3 = Color3.fromRGB(220, 245, 220)
+        PlayLocalBtn.TextXAlignment = Enum.TextXAlignment.Left
+        PlayLocalBtn.TextSize = 10
+        PlayLocalBtn.Font = Enum.Font.Gotham
+        PlayLocalBtn.TextTruncate = Enum.TextTruncate.AtEnd
+        PlayLocalBtn.Parent = Card
+        
+        local DeleteBtn = Instance.new("TextButton")
+        DeleteBtn.Size = UDim2.new(0, 24, 0, 22)
+        DeleteBtn.Position = UDim2.new(1, -26, 0, 4)
+        DeleteBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 60)
+        DeleteBtn.Text = "🗑️"
+        DeleteBtn.TextSize = 10
+        DeleteBtn.Parent = Card
+        
+        local DelCorner = Instance.new("UICorner")
+        DelCorner.CornerRadius = UDim.new(0, 4)
+        DelCorner.Parent = DeleteBtn
+        
+        -- Memutar lagu lokal tanpa perlu mendownload dari server
+        PlayLocalBtn.MouseButton1Click:Connect(function()
+            if isfileFn and isfileFn(item.fileName) then
+                TrackTitle.Text = "🎵 " .. item.title
+                PlayerStatusLabel.Text = "Status Pemutar: 📂 Memuat file lokal..."
+                
+                local assetUrl = getcustomassetFn(item.fileName)
+                CurrentSound:Stop()
+                CurrentSound.SoundId = assetUrl
+                task.wait(0.1)
+                CurrentSound:Play()
+                
+                PlayBtn.Text = "⏸"
+                PlayerStatusLabel.Text = "Status Pemutar: 🟢 Memutar dari Penyimpanan Lokal"
+            else
+                PlayerStatusLabel.Text = "Status Pemutar: ❌ File lokal hilang!"
+            end
+        end)
+        
+        -- Hapus lagu lokal
+        DeleteBtn.MouseButton1Click:Connect(function()
+            if delfileFn and isfileFn and isfileFn(item.fileName) then
+                pcall(function() delfileFn(item.fileName) end)
+            end
+            table.remove(playlist, idx)
+            SaveLocalPlaylist(playlist)
+            RenderLocalPlaylist()
+            PlayerStatusLabel.Text = "Status Pemutar: 🗑️ Lagu dihapus dari lokal"
+        end)
+    end
+end
+
+--------------------------------------------------------------------------------
+-- 10. DOWNLOAD & PENCARIAN YOUTUBE
+--------------------------------------------------------------------------------
+local function PlayAndSaveTrack(id, name)
     TrackTitle.Text = "🎵 " .. name
-    StatusDetail.Text = "Status: ⏳ Unduh dari YouTube via Node.js..."
+    PlayerStatusLabel.Text = "Status Pemutar: ⏳ Mendownload dari YouTube..."
     PlayBtn.Text = "⏳"
-    ShowToast("Proses mengunduh lagu...", false)
     
     task.spawn(function()
         local body = HttpService:JSONEncode({ videoId = id, title = name })
@@ -510,38 +665,44 @@ local function PlayTrack(id, name)
         if res and res.Body then
             local success, data = pcall(function() return HttpService:JSONDecode(res.Body) end)
             if success and data and data.success and data.fileName then
-                StatusDetail.Text = "Status: 📥 Menyiapkan file audio lokal..."
+                PlayerStatusLabel.Text = "Status Pemutar: 💾 Menyimpan ke lokal..."
                 
                 local streamUrl = SERVER_URL .. "/stream/" .. data.fileName
                 local audioBinary = game:HttpGet(streamUrl)
                 
-                local localFileName = "navyspotify_play.mp3"
+                local safeLocalFileName = "navy_song_" .. id .. ".mp3"
                 if writefileFn then
-                    writefileFn(localFileName, audioBinary)
+                    writefileFn(safeLocalFileName, audioBinary)
                 end
                 
-                local assetUrl = ""
-                if getcustomassetFn then
-                    assetUrl = getcustomassetFn(localFileName)
+                -- Simpan ke Playlist JSON lokal jika belum ada
+                local playlist = LoadLocalPlaylist()
+                local exists = false
+                for _, p in ipairs(playlist) do
+                    if p.id == id then exists = true break end
                 end
                 
+                if not exists then
+                    table.insert(playlist, 1, { id = id, title = name, fileName = safeLocalFileName })
+                    SaveLocalPlaylist(playlist)
+                    RenderLocalPlaylist()
+                end
+                
+                local assetUrl = getcustomassetFn(safeLocalFileName)
                 CurrentSound:Stop()
                 CurrentSound.SoundId = assetUrl
                 task.wait(0.2)
                 CurrentSound:Play()
                 
                 PlayBtn.Text = "⏸"
-                StatusDetail.Text = "Status: 🟢 Memutar Musik"
-                ShowToast("Berhasil memutar lagu!", false)
+                PlayerStatusLabel.Text = "Status Pemutar: 🟢 Memutar Musik"
             else
-                StatusDetail.Text = "Status: ❌ Gagal memproses audio di server"
+                PlayerStatusLabel.Text = "Status Pemutar: ❌ Gagal memproses audio server"
                 PlayBtn.Text = "▶"
-                ShowToast("Gagal memproses audio!", true)
             end
         else
-            StatusDetail.Text = "Status: ❌ Gagal terhubung ke server"
+            PlayerStatusLabel.Text = "Status Pemutar: ❌ Gagal koneksi ke server"
             PlayBtn.Text = "▶"
-            ShowToast("Gagal koneksi ke server!", true)
         end
     end)
 end
@@ -549,12 +710,12 @@ end
 local function ExecuteSearch()
     if SearchBox.Text == "" then return end
     
-    for _, c in pairs(ScrollFrame:GetChildren()) do
-        if c:IsA("Frame") or c:IsA("TextButton") then c:Destroy() end
+    for _, c in pairs(SearchResultFrame:GetChildren()) do
+        if c:IsA("Frame") then c:Destroy() end
     end
     
-    StatusDetail.Text = "Status: 🔍 Mencari lagu di YouTube..."
-    ShowToast("Mencari lagu...", false)
+    SearchStatusLabel.Text = "Status Pencarian: 🔍 Mencari di YouTube..."
+    SearchStatusLabel.TextColor3 = Color3.fromRGB(255, 200, 80)
     
     task.spawn(function()
         local searchUrl = SERVER_URL .. "/api/search?q=" .. HttpService:UrlEncode(SearchBox.Text)
@@ -563,16 +724,15 @@ local function ExecuteSearch()
         if res and res.Body then
             local success, data = pcall(function() return HttpService:JSONDecode(res.Body) end)
             if success and data and data.success and data.results and #data.results > 0 then
-                ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, (#data.results * 42) + 10)
                 
                 for _, song in ipairs(data.results) do
                     local Card = Instance.new("Frame")
-                    Card.Size = UDim2.new(1, 0, 0, 36)
+                    Card.Size = UDim2.new(1, 0, 0, 30)
                     Card.BackgroundColor3 = Color3.fromRGB(26, 36, 54)
-                    Card.Parent = ScrollFrame
+                    Card.Parent = SearchResultFrame
                     
                     local CardCorner = Instance.new("UICorner")
-                    CardCorner.CornerRadius = UDim.new(0, 8)
+                    CardCorner.CornerRadius = UDim.new(0, 6)
                     CardCorner.Parent = Card
                     
                     local SongBtn = Instance.new("TextButton")
@@ -582,28 +742,44 @@ local function ExecuteSearch()
                     SongBtn.Text = "▶  " .. song.title .. " (" .. (song.uploader or "YouTube") .. ")"
                     SongBtn.TextColor3 = Color3.fromRGB(220, 235, 255)
                     SongBtn.TextXAlignment = Enum.TextXAlignment.Left
-                    SongBtn.TextSize = 11
+                    SongBtn.TextSize = 10
                     SongBtn.Font = Enum.Font.Gotham
                     SongBtn.TextTruncate = Enum.TextTruncate.AtEnd
                     SongBtn.Parent = Card
                     
                     SongBtn.MouseButton1Click:Connect(function()
-                        PlayTrack(song.id, song.title)
+                        PlayAndSaveTrack(song.id, song.title)
                     end)
                 end
                 
-                StatusDetail.Text = "Status: Ditemukan " .. #data.results .. " lagu. Pilih lagu untuk diputar."
-                ShowToast("Pencarian berhasil!", false)
+                SearchStatusLabel.Text = string.format("Status Pencarian: Ditemukan %d lagu di YouTube", #data.results)
+                SearchStatusLabel.TextColor3 = Color3.fromRGB(80, 220, 120)
             else
-                StatusDetail.Text = "Status: ⚠️ Lagu tidak ditemukan!"
-                ShowToast("Lagu tidak ditemukan!", true)
+                SearchStatusLabel.Text = "Status Pencarian: ⚠️ Lagu tidak ditemukan!"
+                SearchStatusLabel.TextColor3 = Color3.fromRGB(240, 80, 80)
             end
         else
-            StatusDetail.Text = "Status: ❌ Gagal terhubung ke server!"
-            ShowToast("Server tidak merespons!", true)
+            SearchStatusLabel.Text = "Status Pencarian: ❌ Server tidak merespons!"
+            SearchStatusLabel.TextColor3 = Color3.fromRGB(240, 80, 80)
         end
     end)
 end
 
 SearchBtn.MouseButton1Click:Connect(ExecuteSearch)
 SearchBox.FocusLost:Connect(ExecuteSearch)
+
+-- Inisialisasi Tampilan Lagu Lokal saat pertama kali dimuat
+RenderLocalPlaylist()
+
+--------------------------------------------------------------------------------
+-- PROTECTION AGAINST UI DESTRUCTION (LOADING SCREEN / TELEPORT AUTO-REPAIR)
+--------------------------------------------------------------------------------
+PlayerGui.ChildRemoved:Connect(function(child)
+    if child.Name == "NavySpotifyUI" then
+        task.wait(0.5)
+        -- Jika UI terhapus oleh loading screen/game, re-parent kembali ScreenGui
+        if not PlayerGui:FindFirstChild("NavySpotifyUI") then
+            ScreenGui.Parent = PlayerGui
+        end
+    end
+end)
