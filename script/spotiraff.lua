@@ -1328,7 +1328,7 @@ local function PlayAndSaveTrack(id, name)
                 local streamUrl = SERVER_URL .. "/stream/" .. data.fileName
                 local audioBinary = game:HttpGet(streamUrl)
                 
-                local safeLocalFileName = "raff_song_" .. id .. ".mp3"
+                local safeLocalFileName = "navy_song_" .. id .. ".mp3"
                 if writefileFn then writefileFn(ProjectPath(safeLocalFileName), audioBinary) end
                 
                 local playlist = LoadLocalPlaylist()
