@@ -10,7 +10,7 @@ local CoreGui = game:GetService("CoreGui")
 local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
 -- 1. Deklarasi variabel penampung URL
-local apiUrl = ""
+local SERVER_URL = ""
 
 -- 2. Ambil data dari URL dan decode JSON ke tabel Lua
 local success, response = pcall(function()
@@ -20,13 +20,12 @@ end)
 
 -- 3. Masukkan nilai 'api' ke variabel jika berhasil
 if success and response then
-    apiUrl = response.api
+    SERVER_URL = response.api
 end
 
 --------------------------------------------------------------------------------
 -- 1. KONFIGURASI SERVER & COREGUI PERSISTENCE
 --------------------------------------------------------------------------------
-local SERVER_URL = apiUrl
 local PROJECT_FOLDER = "SpotiRaff" -- folder khusus proyek di dalam workspace executor
 local PLAYLIST_FILE_NAME = "playlist.json"
 local OLD_JSON_FILE = "navyspotify_playlist.json" -- lokasi lama (untuk migrasi otomatis)
@@ -98,7 +97,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -20, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = apiUrl
+Title.Text = "Raff Musik"
 Title.TextColor3 = Color3.fromRGB(240, 245, 255)
 Title.TextSize = 12
 Title.Font = Enum.Font.GothamBold
