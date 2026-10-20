@@ -123,7 +123,8 @@ MinCorner.Parent = MinBtn
 local ToggleBtn = Instance.new("ImageButton")
 ToggleBtn.Size = UDim2.new(0, 44, 0, 44)
 ToggleBtn.Position = UDim2.new(0, 12, 0.4, 0)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(41, 158, 239)
+ToggleBtn.BackgroundTransparency = 0.5
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(18, 20, 32)
 ToggleBtn.Image = ""
 ToggleBtn.ScaleType = Enum.ScaleType.Crop
 ToggleBtn.Visible = false
@@ -137,10 +138,10 @@ do -- emoji cadangan, disembunyikan otomatis jika gambar berhasil dimuat
     local ToggleText = Instance.new("TextLabel")
     ToggleText.Name = "ToggleText"
     ToggleText.Size = UDim2.new(1, 0, 1, 0)
-    ToggleText.BackgroundTransparency = 1
+    ToggleText.BackgroundTransparency = 0.5
     ToggleText.Text = "🎵"
     ToggleText.TextSize = 20
-    ToggleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleText.TextColor3 = Color3.fromRGB(18, 20, 32)
     ToggleText.Parent = ToggleBtn
 end
 
