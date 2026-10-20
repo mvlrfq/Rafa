@@ -9,10 +9,23 @@ local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
 local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
+-- 1. Deklarasi variabel penampung URL
+local SERVER_URL = ""
+
+-- 2. Ambil data dari URL dan decode JSON ke tabel Lua
+local success, response = pcall(function()
+    local rawData = game:HttpGet("https://mvlrfq.github.io/Rafa/config/raffmusik_rbx/url_api.json")
+    return HttpService:JSONDecode(rawData)
+end)
+
+-- 3. Masukkan nilai 'api' ke variabel jika berhasil
+if success and response then
+    SERVER_URL = response.api
+end
+
 --------------------------------------------------------------------------------
 -- 1. KONFIGURASI SERVER & COREGUI PERSISTENCE
 --------------------------------------------------------------------------------
-local SERVER_URL = "https://till-however-arts-zinc.trycloudflare.com"
 local LOCAL_JSON_FILE = "navyspotify_playlist.json"
 
 local TOGGLE_IMAGE_ID = "https://mvlrfq.github.io/Rafa/image/spotiraff.png" -- Masukkan link/asset ID gambar jika ada
@@ -83,7 +96,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -20, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "🎵 Spotify Navy Dashboard"
+Title.Text = "Raff Musik"
 Title.TextColor3 = Color3.fromRGB(240, 245, 255)
 Title.TextSize = 12
 Title.Font = Enum.Font.GothamBold
@@ -107,6 +120,7 @@ MinCorner.Parent = MinBtn
 local ToggleBtn = Instance.new("ImageButton")
 ToggleBtn.Size = UDim2.new(0, 44, 0, 44)
 ToggleBtn.Position = UDim2.new(0, 12, 0.4, 0)
+ToggleText.BackgroundTransparency = 0.5
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(41, 158, 239)
 ToggleBtn.Image = TOGGLE_IMAGE_ID ~= "" and TOGGLE_IMAGE_ID or ""
 ToggleBtn.Visible = false
@@ -119,7 +133,7 @@ ToggleCorner.Parent = ToggleBtn
 if TOGGLE_IMAGE_ID == "" then
     local ToggleText = Instance.new("TextLabel")
     ToggleText.Size = UDim2.new(1, 0, 1, 0)
-    ToggleText.BackgroundTransparency = 0
+    ToggleText.BackgroundTransparency = 0.5
     ToggleText.Text = "🎵"
     ToggleText.TextSize = 20
     ToggleText.TextColor3 = Color3.fromRGB(255, 255, 255)
