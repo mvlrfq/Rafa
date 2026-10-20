@@ -1,5 +1,5 @@
 -- Spotify Navy Dashboard - Universal (Android & iOS)
--- Features: Bulletproof Smooth Drag (No Jump), CoreGui Persistence, Stable Scrubbing, iPhone Blur Modal
+-- Features: Perfect Zero-Jump Drag via RenderStepped, CoreGui Persistence, Stable Scrubbing
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -13,9 +13,10 @@ local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 -- 1. KONFIGURASI SERVER & COREGUI PERSISTENCE
 --------------------------------------------------------------------------------
 local SERVER_URL = "https://till-however-arts-zinc.trycloudflare.com"
-local LOCAL_JSON_FILE = "navyspotify_playlist.json"
-
-local TOGGLE_IMAGE_ID = "" -- Masukkan link/asset ID gambar toggle jika ada
+local PROJECT_FOLDER = "SpotiRaff" -- folder khusus proyek di dalam workspace executor
+local PLAYLIST_FILE_NAME = "playlist.json"
+local OLD_JSON_FILE = "navyspotify_playlist.json" -- lokasi lama (untuk migrasi otomatis)
+local TOGGLE_IMAGE_URL = "https://mvlrfq.github.io/Rafa/image/spotiraff.png"
 
 local ExistingSound = SoundService:FindFirstChild("NavySpotifySound")
 if ExistingSound then
@@ -88,6 +89,7 @@ Title.TextColor3 = Color3.fromRGB(240, 245, 255)
 Title.TextSize = 12
 Title.Font = Enum.Font.GothamBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.TextTruncate = Enum.TextTruncate.AtEnd
 Title.Parent = TopBar
 
 local MinBtn = Instance.new("TextButton")
@@ -108,7 +110,8 @@ local ToggleBtn = Instance.new("ImageButton")
 ToggleBtn.Size = UDim2.new(0, 44, 0, 44)
 ToggleBtn.Position = UDim2.new(0, 12, 0.4, 0)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(41, 158, 239)
-ToggleBtn.Image = TOGGLE_IMAGE_ID ~= "" and TOGGLE_IMAGE_ID or ""
+ToggleBtn.Image = ""
+ToggleBtn.ScaleType = Enum.ScaleType.Crop
 ToggleBtn.Visible = false
 ToggleBtn.Parent = ScreenGui
 
@@ -116,8 +119,9 @@ local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleBtn
 
-if TOGGLE_IMAGE_ID == "" then
+do -- emoji cadangan, disembunyikan otomatis jika gambar berhasil dimuat
     local ToggleText = Instance.new("TextLabel")
+    ToggleText.Name = "ToggleText"
     ToggleText.Size = UDim2.new(1, 0, 1, 0)
     ToggleText.BackgroundTransparency = 1
     ToggleText.Text = "🎵"
@@ -141,41 +145,54 @@ ResizeCorner.CornerRadius = UDim.new(0, 4)
 ResizeCorner.Parent = ResizeHandle
 
 --------------------------------------------------------------------------------
--- 3. BULLETPROOF SMOOTH DRAG (FIXED: ZERO JUMP, STRICT BOUNDARY CLAMP)
+-- 3. FIX ABSOLUT DRAG (RENDERSTEPPED - TANPA LONCAT/PERGESERAN SAMA SEKALI)
 --------------------------------------------------------------------------------
 local function SetupSmoothDrag(frame, handle)
     local dragging = false
-    local dragInput
-    local dragOffset = Vector2.new(0, 0)
+    local startInputPos = Vector2.new(0, 0)
+    local startFramePos = Vector2.new(0, 0)
+    local renderConn = nil
 
     handle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
-            dragOffset = Vector2.new(input.Position.X - frame.AbsolutePosition.X, input.Position.Y - frame.AbsolutePosition.Y)
-            
+            startInputPos = Vector2.new(input.Position.X, input.Position.Y)
+            startFramePos = Vector2.new(frame.AbsolutePosition.X, frame.AbsolutePosition.Y)
+
+            if renderConn then renderConn:Disconnect() end
+
+            renderConn = RunService.RenderStepped:Connect(function()
+                if not dragging then
+                    if renderConn then
+                        renderConn:Disconnect()
+                        renderConn = nil
+                    end
+                    return
+                end
+
+                local currentMouse = UserInputService:GetMouseLocation()
+                -- Modifikasi posisi berdasarkan perbedaan koordinat awal
+                local deltaX = currentMouse.X - startInputPos.X
+                local deltaY = currentMouse.Y - startInputPos.Y
+
+                local camera = workspace.CurrentCamera
+                local viewport = camera and camera.ViewportSize or Vector2.new(1280, 720)
+
+                local targetX = math.clamp(startFramePos.X + deltaX, 0, math.max(0, viewport.X - frame.AbsoluteSize.X))
+                local targetY = math.clamp(startFramePos.Y + deltaY, 0, math.max(0, viewport.Y - frame.AbsoluteSize.Y))
+
+                frame.Position = UDim2.new(0, targetX, 0, targetY)
+            end)
+
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
+                    if renderConn then
+                        renderConn:Disconnect()
+                        renderConn = nil
+                    end
                 end
             end)
-        end
-    end)
-
-    handle.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local camera = workspace.CurrentCamera
-            local viewport = camera and camera.ViewportSize or Vector2.new(1280, 720)
-            
-            local newX = math.clamp(input.Position.X - dragOffset.X, 0, math.max(0, viewport.X - frame.AbsoluteSize.X))
-            local newY = math.clamp(input.Position.Y - dragOffset.Y, 0, math.max(0, viewport.Y - frame.AbsoluteSize.Y))
-            
-            frame.Position = UDim2.new(0, newX, 0, newY)
         end
     end)
 end
@@ -183,6 +200,7 @@ end
 SetupSmoothDrag(MainFrame, TopBar)
 SetupSmoothDrag(ToggleBtn, ToggleBtn)
 
+-- Resizing Logic
 local isResizing = false
 local startSize, startMousePos
 
@@ -263,6 +281,7 @@ local PingWidget = Instance.new("Frame")
 PingWidget.Size = UDim2.new(1, 0, 0, 55)
 PingWidget.Position = UDim2.new(0, 0, 1, -55)
 PingWidget.BackgroundColor3 = Color3.fromRGB(15, 20, 30)
+PingWidget.ClipsDescendants = true
 PingWidget.Parent = Sidebar
 
 local PingCorner = Instance.new("UICorner")
@@ -290,6 +309,7 @@ ServerPingLabel.TextSize = 9
 ServerPingLabel.Font = Enum.Font.GothamBold
 ServerPingLabel.TextXAlignment = Enum.TextXAlignment.Left
 ServerPingLabel.TextWrapped = true
+ServerPingLabel.TextTruncate = Enum.TextTruncate.AtEnd
 ServerPingLabel.Parent = PingWidget
 
 --------------------------------------------------------------------------------
@@ -299,6 +319,7 @@ local ContentArea = Instance.new("Frame")
 ContentArea.Size = UDim2.new(1, -170, 1, -40)
 ContentArea.Position = UDim2.new(0, 164, 0, 34)
 ContentArea.BackgroundTransparency = 1
+ContentArea.ClipsDescendants = true
 ContentArea.Parent = MainFrame
 
 -- TAB 1: SEARCH YOUTUBE
@@ -346,6 +367,8 @@ SearchStatusLabel.TextColor3 = Color3.fromRGB(150, 170, 200)
 SearchStatusLabel.TextSize = 9
 SearchStatusLabel.Font = Enum.Font.Gotham
 SearchStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+SearchStatusLabel.TextTruncate = Enum.TextTruncate.AtEnd
+SearchStatusLabel.ClipsDescendants = true
 SearchStatusLabel.Parent = SearchView
 
 local SearchScroll = Instance.new("ScrollingFrame")
@@ -375,42 +398,15 @@ LocalActionBar.BackgroundTransparency = 1
 LocalActionBar.Parent = LocalView
 
 local LocalTitle = Instance.new("TextLabel")
-LocalTitle.Size = UDim2.new(1, -125, 1, 0)
+LocalTitle.Size = UDim2.new(1, 0, 1, 0)
 LocalTitle.BackgroundTransparency = 1
 LocalTitle.Text = "💾 Playlist Lokal:"
 LocalTitle.TextColor3 = Color3.fromRGB(80, 220, 120)
 LocalTitle.TextSize = 10
 LocalTitle.Font = Enum.Font.GothamBold
 LocalTitle.TextXAlignment = Enum.TextXAlignment.Left
+LocalTitle.TextTruncate = Enum.TextTruncate.AtEnd
 LocalTitle.Parent = LocalActionBar
-
-local PlayAllLocalBtn = Instance.new("TextButton")
-PlayAllLocalBtn.Size = UDim2.new(0, 58, 1, 0)
-PlayAllLocalBtn.Position = UDim2.new(1, -120, 0, 0)
-PlayAllLocalBtn.BackgroundColor3 = Color3.fromRGB(41, 158, 239)
-PlayAllLocalBtn.Text = "▶ Semua"
-PlayAllLocalBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-PlayAllLocalBtn.TextSize = 9
-PlayAllLocalBtn.Font = Enum.Font.GothamBold
-PlayAllLocalBtn.Parent = LocalActionBar
-
-local PlayAllCorner = Instance.new("UICorner")
-PlayAllCorner.CornerRadius = UDim.new(0, 5)
-PlayAllCorner.Parent = PlayAllLocalBtn
-
-local ShuffleLocalBtn = Instance.new("TextButton")
-ShuffleLocalBtn.Size = UDim2.new(0, 58, 1, 0)
-ShuffleLocalBtn.Position = UDim2.new(1, -58, 0, 0)
-ShuffleLocalBtn.BackgroundColor3 = Color3.fromRGB(60, 70, 95)
-ShuffleLocalBtn.Text = "🔀 Acak"
-ShuffleLocalBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ShuffleLocalBtn.TextSize = 9
-ShuffleLocalBtn.Font = Enum.Font.GothamBold
-ShuffleLocalBtn.Parent = LocalActionBar
-
-local ShuffleCorner = Instance.new("UICorner")
-ShuffleCorner.CornerRadius = UDim.new(0, 5)
-ShuffleCorner.Parent = ShuffleLocalBtn
 
 local LocalScroll = Instance.new("ScrollingFrame")
 LocalScroll.Size = UDim2.new(1, 0, 1, -30)
@@ -433,6 +429,7 @@ local PlayerBar = Instance.new("Frame")
 PlayerBar.Size = UDim2.new(1, 0, 0, 85)
 PlayerBar.Position = UDim2.new(0, 0, 1, -85)
 PlayerBar.BackgroundColor3 = Color3.fromRGB(22, 30, 46)
+PlayerBar.ClipsDescendants = true
 PlayerBar.Parent = ContentArea
 
 local PlayerCorner = Instance.new("UICorner")
@@ -460,6 +457,7 @@ PlayerStatusLabel.TextColor3 = Color3.fromRGB(140, 160, 190)
 PlayerStatusLabel.TextSize = 8
 PlayerStatusLabel.Font = Enum.Font.Gotham
 PlayerStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+PlayerStatusLabel.TextTruncate = Enum.TextTruncate.AtEnd
 PlayerStatusLabel.Parent = PlayerBar
 
 -- Seekable Progress Bar
@@ -580,6 +578,7 @@ TimeLabel.TextColor3 = Color3.fromRGB(150, 170, 200)
 TimeLabel.TextSize = 8
 TimeLabel.Font = Enum.Font.Gotham
 TimeLabel.TextXAlignment = Enum.TextXAlignment.Right
+TimeLabel.TextTruncate = Enum.TextTruncate.AtEnd
 TimeLabel.Parent = PlayerBar
 
 -- Volume Section
@@ -654,6 +653,8 @@ ConfirmTitle.Text = "⚠️ Konfirmasi Hapus"
 ConfirmTitle.TextColor3 = Color3.fromRGB(255, 100, 100)
 ConfirmTitle.TextSize = 11
 ConfirmTitle.Font = Enum.Font.GothamBold
+ConfirmTitle.TextTruncate = Enum.TextTruncate.AtEnd
+ConfirmTitle.TextXAlignment = Enum.TextXAlignment.Left
 ConfirmTitle.ZIndex = 1002
 ConfirmTitle.Parent = ConfirmModal
 
@@ -666,6 +667,7 @@ ConfirmDesc.TextColor3 = Color3.fromRGB(200, 210, 230)
 ConfirmDesc.TextSize = 9
 ConfirmDesc.Font = Enum.Font.Gotham
 ConfirmDesc.TextWrapped = true
+ConfirmDesc.TextTruncate = Enum.TextTruncate.AtEnd
 ConfirmDesc.ZIndex = 1002
 ConfirmDesc.Parent = ConfirmModal
 
@@ -776,14 +778,50 @@ local readfileFn = readfile or (syn and syn.readfile)
 local isfileFn = isfile or (syn and syn.isfile)
 local delfileFn = delfile or (syn and syn.delfile)
 local getcustomassetFn = getcustomasset or getsynasset or (syn and syn.getcustomasset)
+local makefolderFn = makefolder or (syn and syn.makefolder)
+local isfolderFn = isfolder or (syn and syn.isfolder)
+
+-- Siapkan folder proyek agar file musik tidak bercampur dengan script lain
+local folderReady = false
+if makefolderFn then
+    if isfolderFn and isfolderFn(PROJECT_FOLDER) then
+        folderReady = true
+    else
+        local okMake = pcall(makefolderFn, PROJECT_FOLDER)
+        folderReady = okMake and (not isfolderFn or isfolderFn(PROJECT_FOLDER))
+    end
+end
+
+local function ProjectPath(name)
+    if folderReady then return PROJECT_FOLDER .. "/" .. name end
+    return name -- cadangan jika executor tidak mendukung makefolder
+end
 
 local currentLocalIndex = 1
 local isPlaylistMode = false
 local isShuffleMode = false
 
+-- Antrian shuffle: urutan acak berisi SEMUA lagu (berdasarkan id, bukan index,
+-- karena index bergeser saat lagu ditambah/dihapus). Tiap lagu diputar tepat
+-- sekali per putaran; antrian baru dibuat hanya setelah antrian habis.
+local shuffleQueue = {}
+local shuffleRoundStarted = false
+local currentTrackKey = nil
+local isTransitioning = false
+
+local function ItemKey(item)
+    return item.id or item.fileName
+end
+
+local function ResetShuffleHistory()
+    shuffleQueue = {}
+    shuffleRoundStarted = false
+end
+
 local function LoadLocalPlaylist()
-    if isfileFn and isfileFn(LOCAL_JSON_FILE) then
-        local success, content = pcall(function() return readfileFn(LOCAL_JSON_FILE) end)
+    local jsonPath = ProjectPath(PLAYLIST_FILE_NAME)
+    if isfileFn and isfileFn(jsonPath) then
+        local success, content = pcall(function() return readfileFn(jsonPath) end)
         if success and content then
             local pSuccess, data = pcall(function() return HttpService:JSONDecode(content) end)
             if pSuccess and type(data) == "table" then return data end
@@ -794,7 +832,36 @@ end
 
 local function SaveLocalPlaylist(playlist)
     if writefileFn then
-        pcall(function() writefileFn(LOCAL_JSON_FILE, HttpService:JSONEncode(playlist)) end)
+        pcall(function() writefileFn(ProjectPath(PLAYLIST_FILE_NAME), HttpService:JSONEncode(playlist)) end)
+    end
+end
+
+-- Pindahkan playlist & lagu lama (di root workspace) ke folder proyek, sekali saja
+do
+    if folderReady and isfileFn and readfileFn and writefileFn and isfileFn(OLD_JSON_FILE) then
+        local okRead, content = pcall(readfileFn, OLD_JSON_FILE)
+        local okDec, data = false, nil
+        if okRead and content then
+            okDec, data = pcall(function() return HttpService:JSONDecode(content) end)
+        end
+        if okDec and type(data) == "table" then
+            for _, item in ipairs(data) do
+                local old = item.fileName
+                if old and isfileFn(old) then
+                    local newPath = ProjectPath(old)
+                    pcall(function()
+                        if not isfileFn(newPath) then writefileFn(newPath, readfileFn(old)) end
+                        if isfileFn(newPath) and delfileFn then delfileFn(old) end
+                    end)
+                end
+            end
+            if not isfileFn(ProjectPath(PLAYLIST_FILE_NAME)) then
+                SaveLocalPlaylist(data)
+            end
+            if isfileFn(ProjectPath(PLAYLIST_FILE_NAME)) and delfileFn then
+                pcall(delfileFn, OLD_JSON_FILE)
+            end
+        end
     end
 end
 
@@ -807,6 +874,31 @@ local function customRequest(reqData)
     if not success then return nil end
     return response
 end
+
+-- Muat ikon toggle dari link (disimpan di folder proyek agar tidak diunduh ulang)
+task.spawn(function()
+    if not (getcustomassetFn and writefileFn and isfileFn) then return end
+    local iconPath = ProjectPath("toggle_icon.png")
+
+    local function applyIcon()
+        local ok, asset = pcall(getcustomassetFn, iconPath)
+        if ok and asset and asset ~= "" then
+            ToggleBtn.Image = asset
+            local fallback = ToggleBtn:FindFirstChild("ToggleText")
+            if fallback then fallback.Visible = false end
+            return true
+        end
+        return false
+    end
+
+    if isfileFn(iconPath) and applyIcon() then return end
+
+    local res = customRequest({ Url = TOGGLE_IMAGE_URL, Method = "GET" })
+    if res and res.StatusCode == 200 and res.Body and #res.Body > 0 then
+        pcall(function() writefileFn(iconPath, res.Body) end)
+        applyIcon()
+    end
+end)
 
 -- Ping Loop
 task.spawn(function()
@@ -843,8 +935,11 @@ RunService.RenderStepped:Connect(function()
 end)
 
 local PlayLocalTrackIndex -- forward decl
+local PickShuffleIndex -- forward decl
 
 CurrentSound.Ended:Connect(function()
+    -- abaikan Ended palsu yang muncul saat kita sendiri sedang Stop()/ganti lagu
+    if isTransitioning then return end
     PlayBtn.Text = "▶"
     PlayerStatusLabel.Text = "Status: Selesai"
     
@@ -852,7 +947,7 @@ CurrentSound.Ended:Connect(function()
         local playlist = LoadLocalPlaylist()
         if #playlist > 0 then
             if isShuffleMode then
-                currentLocalIndex = math.random(1, #playlist)
+                currentLocalIndex = PickShuffleIndex(playlist)
             else
                 currentLocalIndex = currentLocalIndex + 1
                 if currentLocalIndex > #playlist then 
@@ -864,28 +959,87 @@ CurrentSound.Ended:Connect(function()
     end
 end)
 
+PickShuffleIndex = function(playlist)
+    local total = #playlist
+    if total <= 1 then return 1 end
+
+    local function findIndex(key)
+        for i, item in ipairs(playlist) do
+            if ItemKey(item) == key then return i end
+        end
+        return nil
+    end
+
+    local function rebuild(excludeCurrent)
+        shuffleQueue = {}
+        for _, item in ipairs(playlist) do
+            local key = ItemKey(item)
+            if not (excludeCurrent and key == currentTrackKey) then
+                table.insert(shuffleQueue, key)
+            end
+        end
+        for i = #shuffleQueue, 2, -1 do
+            local j = math.random(1, i)
+            shuffleQueue[i], shuffleQueue[j] = shuffleQueue[j], shuffleQueue[i]
+        end
+        -- putaran baru: jangan mulai dengan lagu yang baru saja selesai
+        if not excludeCurrent and #shuffleQueue > 1 and shuffleQueue[1] == currentTrackKey then
+            local j = math.random(2, #shuffleQueue)
+            shuffleQueue[1], shuffleQueue[j] = shuffleQueue[j], shuffleQueue[1]
+        end
+    end
+
+    if #shuffleQueue == 0 then
+        -- pertama kali setelah reset: lagu yang sedang diputar dianggap sudah dimainkan
+        rebuild(not shuffleRoundStarted)
+        shuffleRoundStarted = true
+    end
+
+    -- ambil dari antrian, lewati lagu yang sudah dihapus / sedang diputar
+    while #shuffleQueue > 0 do
+        local key = table.remove(shuffleQueue, 1)
+        local idx = findIndex(key)
+        if idx and key ~= currentTrackKey then
+            return idx
+        end
+    end
+
+    -- antrian habis karena entri tidak valid: mulai putaran baru
+    rebuild(false)
+    local key = table.remove(shuffleQueue, 1)
+    return (key and findIndex(key)) or ((currentLocalIndex % total) + 1)
+end
+
 PlayLocalTrackIndex = function(index)
     local playlist = LoadLocalPlaylist()
     if #playlist > 0 and playlist[index] then
         currentLocalIndex = index
         local item = playlist[index]
-        
+        currentTrackKey = ItemKey(item)
+
         TrackTitle.Text = "🎵 " .. item.title
-        
-        if isfileFn and isfileFn(item.fileName) then
-            PlayerStatusLabel.Text = "Status: 📂 Memuat file..."
-            local assetUrl = getcustomassetFn(item.fileName)
-            
-            CurrentSound:Stop()
-            CurrentSound.TimePosition = 0
-            CurrentSound.SoundId = assetUrl
-            
-            task.wait(0.1)
-            CurrentSound:Play()
-            PlayBtn.Text = "⏸"
-            PlayerStatusLabel.Text = "Status: 🟢 Memutar Lagu Lokal"
-        else
-            PlayerStatusLabel.Text = "Status: ❌ File lokal hilang!"
+
+        isTransitioning = true
+        local ok = pcall(function()
+            if isfileFn and isfileFn(ProjectPath(item.fileName)) then
+                PlayerStatusLabel.Text = "Status: 📂 Memuat file..."
+                local assetUrl = getcustomassetFn(ProjectPath(item.fileName))
+
+                CurrentSound:Stop()
+                CurrentSound.TimePosition = 0
+                CurrentSound.SoundId = assetUrl
+
+                task.wait(0.1)
+                CurrentSound:Play()
+                PlayBtn.Text = "⏸"
+                PlayerStatusLabel.Text = "Status: 🟢 Memutar Lagu Lokal"
+            else
+                PlayerStatusLabel.Text = "Status: ❌ File lokal hilang!"
+            end
+        end)
+        isTransitioning = false
+        if not ok then
+            PlayerStatusLabel.Text = "Status: ❌ Gagal memutar lagu"
         end
     end
 end
@@ -921,7 +1075,7 @@ NextBtn.MouseButton1Click:Connect(function()
     if #playlist > 0 then
         isPlaylistMode = true
         if isShuffleMode then
-            currentLocalIndex = math.random(1, #playlist)
+            currentLocalIndex = PickShuffleIndex(playlist)
         else
             currentLocalIndex = (currentLocalIndex % #playlist) + 1
         end
@@ -1095,7 +1249,8 @@ RenderLocalPlaylist = function()
         DelCorner.Parent = DeleteBtn
         
         PlayLocalBtn.MouseButton1Click:Connect(function()
-            isPlaylistMode = false
+            isPlaylistMode = true
+            ResetShuffleHistory()
             PlayLocalTrackIndex(idx)
         end)
         
@@ -1116,8 +1271,8 @@ ConfirmDeleteBtn.MouseButton1Click:Connect(function()
         local playlist = LoadLocalPlaylist()
         local item = playlist[pendingDeleteIndex]
         if item then
-            if delfileFn and isfileFn and isfileFn(item.fileName) then
-                pcall(function() delfileFn(item.fileName) end)
+            if delfileFn and isfileFn and isfileFn(ProjectPath(item.fileName)) then
+                pcall(function() delfileFn(ProjectPath(item.fileName)) end)
             end
             table.remove(playlist, pendingDeleteIndex)
             SaveLocalPlaylist(playlist)
@@ -1129,29 +1284,9 @@ ConfirmDeleteBtn.MouseButton1Click:Connect(function()
     ConfirmOverlay.Visible = false
 end)
 
-PlayAllLocalBtn.MouseButton1Click:Connect(function()
-    local playlist = LoadLocalPlaylist()
-    if #playlist > 0 then
-        isPlaylistMode = true
-        isShuffleMode = false
-        PlayLocalTrackIndex(1)
-        PlayerStatusLabel.Text = "Status: 🟢 Memutar Playlist Lokal"
-    end
-end)
-
-ShuffleLocalBtn.MouseButton1Click:Connect(function()
-    local playlist = LoadLocalPlaylist()
-    if #playlist > 0 then
-        isPlaylistMode = true
-        isShuffleMode = true
-        local randIndex = math.random(1, #playlist)
-        PlayLocalTrackIndex(randIndex)
-        PlayerStatusLabel.Text = "Status: 🔀 Memutar Acak Playlist Lokal"
-    end
-end)
-
 ShuffleBtn.MouseButton1Click:Connect(function()
     isShuffleMode = not isShuffleMode
+    ResetShuffleHistory()
     ShuffleBtn.BackgroundColor3 = isShuffleMode and Color3.fromRGB(41, 158, 239) or Color3.fromRGB(40, 52, 75)
 end)
 
@@ -1159,7 +1294,7 @@ end)
 -- 12. DOWNLOAD & SEARCH
 --------------------------------------------------------------------------------
 local function PlayAndSaveTrack(id, name)
-    SearchStatusLabel.Text = "Status Pencarian: ⏳ Mendownload " .. name .. "..."
+    SearchStatusLabel.Text = "Status Pencarian: ⏳ Mendownload " .. tostring(name) .. "..."
     SearchStatusLabel.TextColor3 = Color3.fromRGB(255, 200, 80)
     isPlaylistMode = false
     
@@ -1180,7 +1315,7 @@ local function PlayAndSaveTrack(id, name)
                 local audioBinary = game:HttpGet(streamUrl)
                 
                 local safeLocalFileName = "navy_song_" .. id .. ".mp3"
-                if writefileFn then writefileFn(safeLocalFileName, audioBinary) end
+                if writefileFn then writefileFn(ProjectPath(safeLocalFileName), audioBinary) end
                 
                 local playlist = LoadLocalPlaylist()
                 local exists = false
@@ -1193,12 +1328,15 @@ local function PlayAndSaveTrack(id, name)
                 end
                 
                 TrackTitle.Text = "🎵 " .. name
-                local assetUrl = getcustomassetFn(safeLocalFileName)
+                currentTrackKey = id
+                isTransitioning = true
+                local assetUrl = getcustomassetFn(ProjectPath(safeLocalFileName))
                 CurrentSound:Stop()
                 CurrentSound.TimePosition = 0
                 CurrentSound.SoundId = assetUrl
                 task.wait(0.2)
                 CurrentSound:Play()
+                isTransitioning = false
                 PlayBtn.Text = "⏸"
                 
                 PlayerStatusLabel.Text = "Status: 🟢 Memutar Musik Baru"
