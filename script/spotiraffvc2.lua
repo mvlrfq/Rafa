@@ -120,7 +120,7 @@ MinCorner.Parent = MinBtn
 local ToggleBtn = Instance.new("ImageButton")
 ToggleBtn.Size = UDim2.new(0, 44, 0, 44)
 ToggleBtn.Position = UDim2.new(0, 12, 0.4, 0)
-ToggleText.BackgroundTransparency = 0.5
+ToggleBtn.BackgroundTransparency = 0.5
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(41, 158, 239)
 ToggleBtn.Image = TOGGLE_IMAGE_ID ~= "" and TOGGLE_IMAGE_ID or ""
 ToggleBtn.Visible = false
