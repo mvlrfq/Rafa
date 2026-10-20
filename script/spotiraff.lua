@@ -14,7 +14,7 @@ local apiUrl = ""
 
 -- 2. Ambil data dari URL dan decode JSON ke tabel Lua
 local success, response = pcall(function()
-    local rawData = HttpService:GetAsync("https://mvlrfq.github.io/Rafa/config/raffmusik_rbx/url_api.json")
+    local rawData = game:HttpGet("https://mvlrfq.github.io/Rafa/config/raffmusik_rbx/url_api.json")
     return HttpService:JSONDecode(rawData)
 end)
 
