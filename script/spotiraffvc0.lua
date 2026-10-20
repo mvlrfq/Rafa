@@ -12,7 +12,7 @@ local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 --------------------------------------------------------------------------------
 -- 1. KONFIGURASI SERVER & COREGUI PERSISTENCE
 --------------------------------------------------------------------------------
-local SERVER_URL = "https://till-however-arts-zinc.trycloudflare.com"
+local SERVER_URL = "https://north-outlet-command-tax.trycloudflare.com"
 local LOCAL_JSON_FILE = "navyspotify_playlist.json"
 
 local TOGGLE_IMAGE_ID = "" -- Masukkan link/asset ID gambar jika ada
