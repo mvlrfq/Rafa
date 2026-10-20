@@ -119,7 +119,7 @@ ToggleCorner.Parent = ToggleBtn
 if TOGGLE_IMAGE_ID == "" then
     local ToggleText = Instance.new("TextLabel")
     ToggleText.Size = UDim2.new(1, 0, 1, 0)
-    ToggleText.BackgroundTransparency = 1
+    ToggleText.BackgroundTransparency = 0
     ToggleText.Text = "🎵"
     ToggleText.TextSize = 20
     ToggleText.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -1225,7 +1225,7 @@ local function PlayAndSaveTrack(id, name)
                 local streamUrl = SERVER_URL .. "/stream/" .. data.fileName
                 local audioBinary = game:HttpGet(streamUrl)
                 
-                local safeLocalFileName = "navy_song_" .. id .. ".mp3"
+                local safeLocalFileName = "raff_song_" .. id .. ".mp3"
                 if writefileFn then writefileFn(safeLocalFileName, audioBinary) end
                 
                 local playlist = LoadLocalPlaylist()
@@ -1268,7 +1268,7 @@ local function ExecuteSearch()
     if SearchBox.Text == "" then return end
     
     ShowSkeletonLoading(SearchScroll)
-    SearchStatusLabel.Text = "Status Pencarian: ⏳ Mencari lagu di YouTube..."
+    SearchStatusLabel.Text = "Status Pencarian: ⏳ Mencari lagu di Server..."
     SearchStatusLabel.TextColor3 = Color3.fromRGB(255, 200, 80)
     
     task.spawn(function()
@@ -1306,7 +1306,7 @@ local function ExecuteSearch()
                         PlayAndSaveTrack(song.id, song.title)
                     end)
                 end
-                SearchStatusLabel.Text = string.format("Status Pencarian: 🟢 Ditemukan %d lagu", #data.results)
+                SearchStatusLabel.Text = string.format("Status Pencarian: 🟢 Lagu ditemukan", #data.results)
                 SearchStatusLabel.TextColor3 = Color3.fromRGB(80, 220, 120)
             else
                 SearchStatusLabel.Text = "Status Pencarian: ⚠️ Lagu tidak ditemukan!"
