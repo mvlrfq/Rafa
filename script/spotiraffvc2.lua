@@ -15,7 +15,7 @@ local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 local SERVER_URL = "https://till-however-arts-zinc.trycloudflare.com"
 local LOCAL_JSON_FILE = "navyspotify_playlist.json"
 
-local TOGGLE_IMAGE_ID = "" -- Masukkan link/asset ID gambar jika ada
+local TOGGLE_IMAGE_ID = "https://mvlrfq.github.io/Rafa/image/spotiraff.png" -- Masukkan link/asset ID gambar jika ada
 
 local ExistingSound = SoundService:FindFirstChild("NavySpotifySound")
 if ExistingSound then
