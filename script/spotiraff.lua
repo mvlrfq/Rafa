@@ -9,10 +9,24 @@ local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
 local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
+-- 1. Deklarasi variabel penampung URL
+local apiUrl = ""
+
+-- 2. Ambil data dari URL dan decode JSON ke tabel Lua
+local success, response = pcall(function()
+    local rawData = HttpService:GetAsync("https://mvlrfq.github.io/Rafa/config/raffmusik_rbx/url_api.json")
+    return HttpService:JSONDecode(rawData)
+end)
+
+-- 3. Masukkan nilai 'api' ke variabel jika berhasil
+if success and response then
+    apiUrl = response.api
+end
+
 --------------------------------------------------------------------------------
 -- 1. KONFIGURASI SERVER & COREGUI PERSISTENCE
 --------------------------------------------------------------------------------
-local SERVER_URL = "https://till-however-arts-zinc.trycloudflare.com"
+local SERVER_URL = apiUrl
 local PROJECT_FOLDER = "SpotiRaff" -- folder khusus proyek di dalam workspace executor
 local PLAYLIST_FILE_NAME = "playlist.json"
 local OLD_JSON_FILE = "navyspotify_playlist.json" -- lokasi lama (untuk migrasi otomatis)
