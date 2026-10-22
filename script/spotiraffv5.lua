@@ -173,7 +173,7 @@ local Title = Create("TextLabel", {
 -- Tombol "i" (panduan pengguna), posisinya mengikuti lebar teks judul
 local InfoBtn = Create("TextButton", {
     Size = UDim2.new(0, 20, 0, 20),
-    Position = UDim2.new(0, 160, 0, 6),
+    Position = UDim2.new(0, 200, 0, 6),
     BackgroundColor3 = C.btnDark,
     Text = "i",
     TextColor3 = C.accentSoft,
@@ -217,8 +217,9 @@ AddCorner(CloseBtn, 12)
 
 -- Tombol ikon untuk membuka kembali jendela setelah di-minimize
 local ToggleBtn = Create("ImageButton", {
-    Size = UDim2.new(0, 44, 0, 44),
+    Size = UDim2.new(0, 40, 0, 40),
     Position = UDim2.new(0, 12, 0.4, 0),
+    BackgroundTransparency = 0.5,
     BackgroundColor3 = C.accent,
     Image = "",
     ScaleType = Enum.ScaleType.Crop,
@@ -230,7 +231,7 @@ AddCorner(ToggleBtn, 8)
 Create("TextLabel", {
     Name = "ToggleText",
     Size = UDim2.new(1, 0, 1, 0),
-    BackgroundTransparency = 1,
+    BackgroundTransparency = 0.5,
     Text = "🎵",
     TextSize = 20,
     TextColor3 = Color3.fromRGB(255, 255, 255),
