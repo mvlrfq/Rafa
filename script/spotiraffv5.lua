@@ -173,7 +173,7 @@ local Title = Create("TextLabel", {
 -- Tombol "i" (panduan pengguna), posisinya mengikuti lebar teks judul
 local InfoBtn = Create("TextButton", {
     Size = UDim2.new(0, 20, 0, 20),
-    Position = UDim2.new(0, 200, 0, 6),
+    Position = UDim2.new(0, 120, 0, 6),
     BackgroundColor3 = C.btnDark,
     Text = "i",
     TextColor3 = C.accentSoft,
@@ -185,7 +185,7 @@ Create("UIStroke", { Color = C.stroke, Thickness = 1 }, InfoBtn)
 
 do
     local function PositionInfoBtn()
-        InfoBtn.Position = UDim2.new(0, 12 + Title.TextBounds.X + 8, 0, 6)
+        InfoBtn.Position = UDim2.new(0, 12 + Title.TextBounds.X + 24, 0, 6)
     end
     Title:GetPropertyChangedSignal("TextBounds"):Connect(PositionInfoBtn)
     PositionInfoBtn()
