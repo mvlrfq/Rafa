@@ -230,7 +230,7 @@ Create("UIStroke", { Color = C.stroke, Thickness = 1 }, InfoBtn)
 
 do
     local function PositionInfoBtn()
-        InfoBtn.Position = UDim2.new(0, 12 + Title.TextBounds.X + 8, 0, 6)
+        InfoBtn.Position = UDim2.new(0, 12 + Title.TextBounds.X + 24, 0, 6)
     end
     Title:GetPropertyChangedSignal("TextBounds"):Connect(PositionInfoBtn)
     PositionInfoBtn()
@@ -262,8 +262,9 @@ AddCorner(CloseBtn, 12)
 
 -- Tombol ikon untuk membuka kembali jendela setelah di-minimize
 local ToggleBtn = Create("ImageButton", {
-    Size = UDim2.new(0, 44, 0, 44),
+    Size = UDim2.new(0, 40, 0, 40),
     Position = UDim2.new(0, 12, 0.4, 0),
+    BackgroundTransparency = 0.5,
     BackgroundColor3 = C.accent,
     Image = "",
     ScaleType = Enum.ScaleType.Crop,
@@ -275,7 +276,7 @@ AddCorner(ToggleBtn, 8)
 Create("TextLabel", {
     Name = "ToggleText",
     Size = UDim2.new(1, 0, 1, 0),
-    BackgroundTransparency = 1,
+    BackgroundTransparency = 0.5,
     Text = "🎵",
     TextSize = 20,
     TextColor3 = Color3.fromRGB(255, 255, 255),
@@ -374,8 +375,8 @@ end)
 Track(UserInputService.InputChanged:Connect(function(input)
     if isResizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - startMousePos
-        local newWidth = math.clamp(startSize.X.Offset + delta.X, 480, 850)
-        local newHeight = math.clamp(startSize.Y.Offset + delta.Y, 280, 550)
+        local newWidth = math.clamp(startSize.X.Offset + delta.X, 580, 650)
+        local newHeight = math.clamp(startSize.Y.Offset + delta.Y, 330, 550)
         MainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
     end
 end))
@@ -421,37 +422,78 @@ local MarqueeBox = Create("Frame", {
 }, Sidebar)
 AddCorner(MarqueeBox, 6)
 
--- Beberapa salinan teks disusun berurutan agar gerakannya tidak pernah putus
+-- Teks berjalan versi ringan: beberapa salinan teks disusun dalam satu wadah (Strip),
+-- lalu wadah itu digeser oleh SATU Tween yang dihitung engine Roblox (tanpa kode Lua per frame).
+-- Setelah bergeser sejauh satu siklus, tampilannya identik sehingga loop terlihat mulus.
 do
-local marqueeLabels = {}
-for i = 1, 4 do
-    marqueeLabels[i] = Create("TextLabel", {
+    local MARQUEE_SPEED = 38 -- kecepatan gerak (piksel per detik)
+    local MARQUEE_GAP = 36   -- jarak antar teks (piksel)
+
+    -- Wadah yang digeser; lebarnya otomatis mengikuti isi
+    local Strip = Create("Frame", {
         Size = UDim2.new(0, 0, 1, 0),
         AutomaticSize = Enum.AutomaticSize.X,
         BackgroundTransparency = 1,
-        RichText = true,
-        Text = "<i>Raff Musik</i>", -- teks berjalan (italic)
-        TextColor3 = C.accent,
-        TextSize = 15,
-        Font = Enum.Font.GothamBold,
-        TextXAlignment = Enum.TextXAlignment.Left,
     }, MarqueeBox)
-end
 
--- Animasi teks berjalan: bergerak ke kiri terus-menerus (kecepatan dalam piksel/detik)
-local MARQUEE_SPEED = 38
-local MARQUEE_GAP = 36
-local marqueeOffset = 0
-Track(RunService.Heartbeat:Connect(function(dt)
-    if isClosed or not MainFrame.Visible then return end
-    local w = marqueeLabels[1].AbsoluteSize.X
-    if w < 10 then return end
-    local cycle = w + MARQUEE_GAP
-    marqueeOffset = (marqueeOffset + MARQUEE_SPEED * dt) % cycle
-    for i, lbl in ipairs(marqueeLabels) do
-        lbl.Position = UDim2.new(0, (i - 1) * cycle - marqueeOffset, 0, 0)
+    -- Susunan mendatar otomatis untuk salinan teks
+    Create("UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal,
+        Padding = UDim.new(0, MARQUEE_GAP),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+    }, Strip)
+
+    -- 4 salinan teks agar kotak selalu terisi saat wadah bergeser
+    local firstLabel
+    for i = 1, 4 do
+        local lbl = Create("TextLabel", {
+            Size = UDim2.new(0, 0, 1, 0),
+            AutomaticSize = Enum.AutomaticSize.X,
+            BackgroundTransparency = 1,
+            RichText = true,
+            Text = "<i>Raff Musik</i>", -- teks berjalan (italic)
+            TextColor3 = C.accent,
+            TextSize = 15,
+            Font = Enum.Font.GothamBold,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            LayoutOrder = i,
+        }, Strip)
+        if i == 1 then firstLabel = lbl end
     end
-end))
+
+    -- Membuat (ulang) Tween sesuai lebar teks: geser sejauh satu siklus lalu ulang tanpa henti
+    local marqueeTween = nil
+    local lastWidth = 0
+    local function rebuild()
+        local w = firstLabel.AbsoluteSize.X
+        if w < 10 or w == lastWidth then return end
+        lastWidth = w
+        local cycle = w + MARQUEE_GAP
+        if marqueeTween then marqueeTween:Cancel() end
+        Strip.Position = UDim2.new(0, 0, 0, 0)
+        marqueeTween = TweenService:Create(
+            Strip,
+            TweenInfo.new(cycle / MARQUEE_SPEED, Enum.EasingStyle.Linear, Enum.EasingDirection.In, -1, false, 0),
+            { Position = UDim2.new(0, -cycle, 0, 0) }
+        )
+        if MainFrame.Visible then marqueeTween:Play() end
+    end
+    firstLabel:GetPropertyChangedSignal("AbsoluteSize"):Connect(rebuild)
+    rebuild()
+
+    -- Jeda saat jendela di-minimize, lanjut saat dibuka lagi
+    MainFrame:GetPropertyChangedSignal("Visible"):Connect(function()
+        if not marqueeTween then return end
+        if MainFrame.Visible then marqueeTween:Play() else marqueeTween:Pause() end
+    end)
+
+    -- Hentikan Tween saat UI dihapus (tombol X)
+    MarqueeBox.AncestryChanged:Connect(function()
+        if marqueeTween and not MarqueeBox:IsDescendantOf(game) then
+            marqueeTween:Cancel()
+            marqueeTween = nil
+        end
+    end)
 end
 
 -- Tombol tab "Cari Lagu Online"
@@ -602,7 +644,7 @@ local LocalControlBar = Create("Frame", {
 local FilterBox = Create("TextBox", {
     Size = UDim2.new(1, -136, 1, 0),
     BackgroundColor3 = C.field,
-    PlaceholderText = "🔎 Filter nama lagu...",
+    PlaceholderText = "🔎 Cari nama lagu...",
     PlaceholderColor3 = C.dim,
     Text = "",
     ClearTextOnFocus = false,
